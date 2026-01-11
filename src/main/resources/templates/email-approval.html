@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>审核结果通知</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status-banner {
+            text-align: center;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .status-banner.approved {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+        .status-banner.rejected {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .status-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-text.approved {
+            color: #155724;
+        }
+        .status-text.rejected {
+            color: #721c24;
+        }
+        .status-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-item {
+            display: flex;
+            margin: 12px 0;
+            font-size: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 100px;
+        }
+        .info-value {
+            color: #333;
+            flex: 1;
+        }
+        .reason-box {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .reason-title {
+            font-weight: bold;
+            color: #f57c00;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .reason-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .action-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .action-title {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 8px;
+        }
+        .action-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .message {
+            color: #666;
+            line-height: 1.8;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer-links {
+            margin: 10px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📢 审核结果通知</h1>
+        </div>
+        <div class="content">
+            <div class="greeting">
+                尊敬的 <strong th:text="${username}">用户</strong>，您好！
+            </div>
+            
+            <div th:class="${'status-banner ' + statusClass}">
+                <div class="status-icon" th:text="${statusIcon}">✅</div>
+                <div th:class="${'status-text ' + statusClass}" th:text="${statusText}">审核通过</div>
+                <div class="status-desc" th:text="${statusDesc}">您的预约申请已通过审核</div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">预约编号：</span>
+                    <span class="info-value" th:text="${reservationId}">R20240111001</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">实验室名称：</span>
+                    <span class="info-value" th:text="${labName}">计算机实验室A101</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">预约时间：</span>
+                    <span class="info-value" th:text="${reservationTime}">2024年01月15日 14:00 - 16:00</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">审核时间：</span>
+                    <span class="info-value" th:text="${approvalTime}">2024年01月11日 12:30</span>
+                </div>
+                <div class="info-item" th:if="${approver}">
+                    <span class="info-label">审核人：</span>
+                    <span class="info-value" th:text="${approver}">张老师</span>
+                </div>
+            </div>
+
+            <!-- 审核意见（如果有） -->
+            <div class="reason-box" th:if="${reason}">
+                <div class="reason-title">💬 审核意见</div>
+                <div class="reason-content" th:text="${reason}">审核意见内容</div>
+            </div>
+
+            <!-- 通过后的操作指引 -->
+            <div class="action-box" th:if="${statusClass == 'approved'}">
+                <div class="action-title">✨ 下一步操作</div>
+                <div class="action-content">
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>请按预约时间准时到达实验室</li>
+                        <li>到达后使用系统进行签到操作</li>
+                        <li>使用完毕后请及时签退并整理实验室</li>
+                        <li>如需取消预约，请至少提前2小时操作</li>
+                    </ul>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" th:href="${systemUrl + '/reservations'}" class="button">查看我的预约</a>
+                </div>
+            </div>
+
+            <!-- 拒绝后的操作指引 -->
+            <div class="action-box" th:if="${statusClass == 'rejected'}">
+                <div class="action-title">📝 建议操作</div>
+                <div class="action-content">
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>查看审核意见，了解拒绝原因</li>
+                        <li>根据意见调整预约计划</li>
+                        <li>选择合适的时间段重新提交预约</li>
+                        <li>如有疑问，请联系实验室管理员</li>
+                    </ul>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" th:href="${systemUrl + '/labs'}" class="button">重新预约</a>
+                </div>
+            </div>
+
+            <div class="message" style="margin-top: 30px; color: #999; font-size: 14px;">
+                此邮件由系统自动发送，请勿直接回复。如有任何问题，请登录系统联系管理员。
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>实验室预约系统 · Laboratory Reservation System</div>
+            <div class="footer-links">
+                <a href="#" th:href="${systemUrl}">访问系统</a> |
+                <a href="#" th:href="${systemUrl + '/help'}">帮助中心</a> |
+                <a href="#" th:href="${systemUrl + '/contact'}">联系我们</a>
+            </div>
+            <div style="margin-top: 10px; color: #999;">
+                © 2024 实验室预约系统. All rights reserved.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

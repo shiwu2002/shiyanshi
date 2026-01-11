@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .message {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .verify-button {
+            display: inline-block;
+            padding: 14px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+        .verify-button:hover {
+            transform: translateY(-2px);
+        }
+        .link-text {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+            word-break: break-all;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #e9ecef;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 实验室预约系统</h1>
+        </div>
+        <div class="content">
+            <div class="greeting">
+                您好，<strong th:text="${username}">用户</strong>！
+            </div>
+            <div class="message">
+                感谢您注册实验室预约系统！为了确保您的账户安全，请点击下方按钮验证您的邮箱地址。
+            </div>
+            <div class="button-container">
+                <a th:href="${verifyUrl}" class="verify-button">立即验证邮箱</a>
+            </div>
+            <div class="link-text">
+                如果按钮无法点击，请复制以下链接到浏览器中打开：<br>
+                <span th:text="${verifyUrl}">验证链接</span>
+            </div>
+            <div class="warning">
+                ⚠️ 此验证链接将在 <strong th:text="${expireMinutes}">30</strong> 分钟后失效。<br>
+                如果这不是您本人的操作，请忽略此邮件。
+            </div>
+        </div>
+        <div class="footer">
+            <p>这是一封系统自动发送的邮件，请勿直接回复。</p>
+            <p>© 2026 实验室预约系统. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

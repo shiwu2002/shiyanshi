@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约通知</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-item {
+            display: flex;
+            margin: 12px 0;
+            font-size: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 100px;
+        }
+        .info-value {
+            color: #333;
+            flex: 1;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .message {
+            color: #666;
+            line-height: 1.8;
+            margin: 20px 0;
+        }
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .note-title {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 8px;
+        }
+        .note-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer-links {
+            margin: 10px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 预约通知</h1>
+        </div>
+        <div class="content">
+            <div class="greeting">
+                尊敬的 <strong th:text="${username}">用户</strong>，您好！
+            </div>
+            
+            <div class="message">
+                您的实验室预约已提交成功，详细信息如下：
+            </div>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">预约编号：</span>
+                    <span class="info-value" th:text="${reservationId}">R20240111001</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">实验室名称：</span>
+                    <span class="info-value" th:text="${labName}">计算机实验室A101</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">预约时间：</span>
+                    <span class="info-value" th:text="${reservationTime}">2024年01月15日 14:00 - 16:00</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">预约用途：</span>
+                    <span class="info-value" th:text="${purpose}">课程实验</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">当前状态：</span>
+                    <span class="info-value">
+                        <span th:class="${'status-badge status-' + statusClass}" th:text="${status}">待审核</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="note">
+                <div class="note-title">📌 温馨提示</div>
+                <div class="note-content">
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>请在预约时间前10分钟到达实验室</li>
+                        <li>进入实验室时请进行签到，离开时请签退</li>
+                        <li>使用实验室期间请遵守实验室管理规定</li>
+                        <li>如需取消预约，请至少提前2小时操作</li>
+                        <li>如有疑问，请联系实验室管理员</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="message" style="margin-top: 30px; color: #999; font-size: 14px;">
+                此邮件由系统自动发送，请勿直接回复。如有任何问题，请登录系统联系管理员。
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>实验室预约系统 · Laboratory Reservation System</div>
+            <div class="footer-links">
+                <a href="#" th:href="${systemUrl}">访问系统</a> |
+                <a href="#" th:href="${systemUrl + '/help'}">帮助中心</a> |
+                <a href="#" th:href="${systemUrl + '/contact'}">联系我们</a>
+            </div>
+            <div style="margin-top: 10px; color: #999;">
+                © 2024 实验室预约系统. All rights reserved.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约提醒</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .reminder-banner {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 6px solid #ffc107;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .reminder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .reminder-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #f57c00;
+            margin-bottom: 10px;
+        }
+        .reminder-time {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e65100;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .reminder-desc {
+            font-size: 15px;
+            color: #666;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-item {
+            display: flex;
+            margin: 12px 0;
+            font-size: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 100px;
+        }
+        .info-value {
+            color: #333;
+            flex: 1;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .highlight-title {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 12px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .highlight-title::before {
+            content: "⏰";
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        .highlight-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .checklist {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        .checklist-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .checklist-title::before {
+            content: "✓";
+            margin-right: 8px;
+            font-size: 20px;
+            color: #4caf50;
+        }
+        .checklist ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .checklist li {
+            color: #555;
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .button-group {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 35px;
+            margin: 0 10px;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .button-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .warning {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-title {
+            font-weight: bold;
+            color: #c62828;
+            margin-bottom: 8px;
+        }
+        .warning-content {
+            color: #555;
+            font-size: 14px;
+        }
+        .message {
+            color: #666;
+            line-height: 1.8;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer-links {
+            margin: 10px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ 预约提醒通知</h1>
+        </div>
+        <div class="content">
+            <div class="greeting">
+                尊敬的 <strong th:text="${username}">用户</strong>，您好！
+            </div>
+            
+            <div class="reminder-banner">
+                <div class="reminder-icon">🔔</div>
+                <div class="reminder-title">您的预约即将开始</div>
+                <div class="reminder-time" th:text="${remainingTime}">还有30分钟</div>
+                <div class="reminder-desc">请做好准备，准时到达实验室</div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">预约编号：</span>
+                    <span class="info-value" th:text="${reservationId}">R20240111001</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">实验室名称：</span>
+                    <span class="info-value" th:text="${labName}">计算机实验室A101</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">实验室位置：</span>
+                    <span class="info-value" th:text="${labLocation}">教学楼A座1层101室</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">预约时间：</span>
+                    <span class="info-value" th:text="${reservationTime}">2024年01月15日 14:00 - 16:00</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">开始时间：</span>
+                    <span class="info-value" th:text="${startTime}" style="color: #f57c00; font-weight: bold;">14:00</span>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <div class="highlight-title">到达实验室后请完成以下操作</div>
+                <div class="highlight-content">
+                    1. 使用系统扫描实验室二维码进行<strong>签到</strong><br>
+                    2. 确认设备状态正常后开始使用<br>
+                    3. 使用完毕后整理实验室并进行<strong>签退</strong>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-title">出发前检查清单</div>
+                <ul>
+                    <li>✓ 确认已携带学生证或工作证</li>
+                    <li>✓ 准备好实验所需的材料和工具</li>
+                    <li>✓ 检查手机电量，确保能完成签到签退</li>
+                    <li>✓ 确认实验室位置和到达路线</li>
+                    <li>✓ 预留足够的路程时间</li>
+                </ul>
+            </div>
+
+            <div class="button-group">
+                <a href="#" th:href="${systemUrl + '/reservations/' + reservationId}" class="button button-primary">查看预约详情</a>
+                <a href="#" th:href="${systemUrl + '/checkin/' + reservationId}" class="button button-secondary">前往签到</a>
+            </div>
+
+            <div class="warning">
+                <div class="warning-title">⚠️ 重要提醒</div>
+                <div class="warning-content">
+                    • 请务必准时到达，超过开始时间15分钟未签到，预约将自动取消<br>
+                    • 如无法按时到达，请至少提前2小时取消预约<br>
+                    • 多次无故缺席可能影响您的信用记录
+                </div>
+            </div>
+
+            <div class="message" style="margin-top: 30px; color: #999; font-size: 14px;">
+                此邮件由系统自动发送，请勿直接回复。如有任何问题，请登录系统联系管理员。
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>实验室预约系统 · Laboratory Reservation System</div>
+            <div class="footer-links">
+                <a href="#" th:href="${systemUrl}">访问系统</a> |
+                <a href="#" th:href="${systemUrl + '/help'}">帮助中心</a> |
+                <a href="#" th:href="${systemUrl + '/contact'}">联系我们</a>
+            </div>
+            <div style="margin-top: 10px; color: #999;">
+                © 2024 实验室预约系统. All rights reserved.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
