@@ -3,21 +3,76 @@ package com.example.shiyanshi.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.security.MessageDigest;
+import java.util.Base64;
+import java.util.Arrays;
 
 /**
  * JWT工具类
+ * - 从配置文件读取密钥与过期时间
+ * - 提供生成、解析、校验、刷新Token的能力
+ *
+ * 配置项：
+ * - jwt.secret：签名密钥（字符串）
+ * - jwt.expiration：过期时间（毫秒）
  */
+@Component
 public class JWTUtil {
 
-    // JWT密钥（应该从配置文件读取）
-    private static final String SECRET_KEY = "lab_reservation_system_secret_key_2024";
-    
-    // Token有效期（24小时）
-    private static final long EXPIRATION_TIME = 24 * 60 * 60 * 1000;
+    /**
+     * 从配置文件读取的原始密钥字符串
+     */
+    @Value("${jwt.secret}")
+    private String secret;
+
+    /**
+     * 从配置文件读取的过期时间（毫秒），默认24小时
+     */
+    @Value("${jwt.expiration:86400000}")
+    private long expirationMillis;
+
+    /**
+     * 供静态方法使用的签名密钥与过期时长
+     */
+    private static SecretKey SIGNING_KEY;
+    private static long EXPIRATION_TIME;
+
+    /**
+     * 初始化静态密钥与过期时间
+     */
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes;
+        String raw = secret != null ? secret.trim() : "";
+        try {
+            // 支持 base64: 前缀的密钥（例如：jwt.secret=base64:xxx），否则按UTF-8字节
+            if (raw.startsWith("base64:")) {
+                String b64 = raw.substring("base64:".length());
+                keyBytes = Base64.getDecoder().decode(b64);
+            } else {
+                keyBytes = raw.getBytes(StandardCharsets.UTF_8);
+            }
+            // 若长度不足32字节（256bit），使用SHA-256对原始密钥派生得到固定长度的安全密钥
+            if (keyBytes.length < 32) {
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                keyBytes = md.digest(keyBytes);
+            }
+            SIGNING_KEY = Keys.hmacShaKeyFor(keyBytes);
+        } catch (Exception e) {
+            throw new IllegalStateException("JWT密钥初始化失败，请检查配置 jwt.secret", e);
+        }
+        EXPIRATION_TIME = expirationMillis;
+    }
 
     /**
      * 生成Token
@@ -27,13 +82,13 @@ public class JWTUtil {
         claims.put("userId", userId);
         claims.put("username", username);
         claims.put("userType", userType);
-        
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .signWith(SIGNING_KEY, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -42,8 +97,9 @@ public class JWTUtil {
      */
     public static Claims getClaimsFromToken(String token) {
         try {
-            return Jwts.parser()
-                    .setSigningKey(SECRET_KEY)
+            return Jwts.parserBuilder()
+                    .setSigningKey(SIGNING_KEY)
+                    .build()
                     .parseClaimsJws(token)
                     .getBody();
         } catch (Exception e) {
@@ -62,6 +118,8 @@ public class JWTUtil {
                 return ((Integer) userId).longValue();
             } else if (userId instanceof Long) {
                 return (Long) userId;
+            } else if (userId instanceof Number) {
+                return ((Number) userId).longValue();
             }
         }
         return null;
@@ -94,7 +152,7 @@ public class JWTUtil {
             }
             // 检查是否过期
             Date expiration = claims.getExpiration();
-            return expiration.after(new Date());
+            return expiration != null && expiration.after(new Date());
         } catch (Exception e) {
             return false;
         }

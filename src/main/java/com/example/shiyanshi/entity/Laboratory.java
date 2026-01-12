@@ -20,17 +20,25 @@ public class Laboratory {
     private String labName;          // 实验室名称
     private String labNumber;        // 实验室编号
     private String location;         // 位置
+    @TableField(exist = false)
     private String building;         // 楼栋
+    @TableField(exist = false)
     private String floor;            // 楼层
     private Integer capacity;        // 容纳人数
     private String equipment;        // 设备清单（JSON格式）
     private String description;      // 实验室描述
-    private String labType;          // 实验室类型：计算机/物理/化学/生物等
+    private String imageUrl;        // 图片URL（对应数据库字段 image_url）
+    @TableField(exist = false)
+    private String labType;          // 实验室类型：计算机/物理/化学/生物等（非持久化字段）
     private Integer status;          // 状态：0-停用 1-正常 2-维护中
-    private String manager;          // 负责人
-    private String managerPhone;     // 负责人电话
-    private String images;           // 实验室图片（多张，逗号分隔）
-    private String openTime;         // 开放时间说明
+    @TableField(exist = false)
+    private String manager;          // 负责人（非持久化字段）
+    @TableField(exist = false)
+    private String managerPhone;     // 负责人电话（非持久化字段）
+    @TableField(exist = false)
+    private String images;           // 实验室图片（非持久化字段，使用 imageUrl 映射单图）
+    @TableField(exist = false)
+    private String openTime;         // 开放时间说明（非持久化字段）
     
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

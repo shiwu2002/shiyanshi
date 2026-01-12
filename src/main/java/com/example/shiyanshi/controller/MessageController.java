@@ -3,6 +3,7 @@ package com.example.shiyanshi.controller;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.Message;
 import com.example.shiyanshi.service.MessageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -102,8 +103,38 @@ public class MessageController {
      * 获取未读消息数量
      */
     @GetMapping("/unread-count/{userId}")
-    public Result<Integer> getUnreadCount(@PathVariable Long userId) {
+    public Result<Integer> getUnreadCount(@PathVariable String userId, jakarta.servlet.http.HttpServletRequest request) {
         try {
+            Long uid;
+            // 前端若传 "undefined" 或空，回退到 JWTInterceptor 注入的 userId
+            if (userId == null || userId.isBlank() || "undefined".equalsIgnoreCase(userId)) {
+                Object attr = request.getAttribute("userId");
+                if (attr == null) {
+                    return Result.error("缺少用户身份信息，请登录后重试");
+                }
+                uid = (attr instanceof Long) ? (Long) attr : Long.valueOf(attr.toString());
+            } else {
+                uid = Long.valueOf(userId);
+            }
+            int count = messageService.getUnreadCount(uid);
+            return Result.success(count);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取未读消息数量（从JWT拦截器注入的用户信息获取，无需路径参数）
+     * 解决前端 userId 未传导致的 400 问题
+     */
+    @GetMapping("/unread-count")
+    public Result<Integer> getUnreadCountByToken(HttpServletRequest request) {
+        try {
+            Object uid = request.getAttribute("userId");
+            if (uid == null) {
+                return Result.error("缺少用户身份信息，请登录后重试");
+            }
+            Long userId = (uid instanceof Long) ? (Long) uid : Long.valueOf(uid.toString());
             int count = messageService.getUnreadCount(userId);
             return Result.success(count);
         } catch (Exception e) {

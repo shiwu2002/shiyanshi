@@ -40,8 +40,8 @@ public interface LaboratoryMapper extends BaseMapper<Laboratory> {
      * 根据类型查询实验室
      */
     default java.util.List<Laboratory> findByType(String labType) {
+        // 数据库无实验室类型字段，暂不按类型过滤
         return selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Laboratory>()
-                .eq(Laboratory::getLabType, labType)
                 .eq(Laboratory::getStatus, 1)
                 .orderByDesc(Laboratory::getCreateTime));
     }
@@ -62,9 +62,7 @@ public interface LaboratoryMapper extends BaseMapper<Laboratory> {
                     .or().like(Laboratory::getLocation, keyword));
         }
         
-        if (labType != null && !labType.trim().isEmpty()) {
-            wrapper.eq(Laboratory::getLabType, labType);
-        }
+        // 数据库无实验室类型字段，忽略labType过滤
         
         if (status != null) {
             wrapper.eq(Laboratory::getStatus, status);

@@ -405,4 +405,36 @@ public class ReservationService {
         LocalDate reserveDate = LocalDate.parse(date);
         return reservationMapper.findByLabIdAndDate(labId, reserveDate);
     }
+
+    /**
+     * 根据用户与状态统计预约数量
+     */
+    public int countByUserIdAndStatus(Long userId, Integer status) {
+        Long count = reservationMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Reservation>()
+                        .eq(Reservation::getUserId, userId)
+                        .eq(Reservation::getStatus, status)
+        );
+        return count != null ? count.intValue() : 0;
+    }
+
+    /**
+     * 获取指定用户的预约统计数据
+     * - total: 总预约次数（状态 in [1,4] 与现有 countByUserId 同口径保持）
+     * - pending: 待审核(0)
+     * - approved: 已通过(1)
+     * - rejected: 已拒绝(2)
+     * - canceled: 已取消(3)
+     * - completed: 已完成(4)
+     */
+    public Map<String, Integer> getUserReservationStats(Long userId) {
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("total", countByUserId(userId));
+        stats.put("pending", countByUserIdAndStatus(userId, 0));
+        stats.put("approved", countByUserIdAndStatus(userId, 1));
+        stats.put("rejected", countByUserIdAndStatus(userId, 2));
+        stats.put("canceled", countByUserIdAndStatus(userId, 3));
+        stats.put("completed", countByUserIdAndStatus(userId, 4));
+        return stats;
+    }
 }

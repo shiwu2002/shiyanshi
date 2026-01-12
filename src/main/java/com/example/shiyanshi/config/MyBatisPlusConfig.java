@@ -1,10 +1,15 @@
 package com.example.shiyanshi.config;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
 
 /**
@@ -12,6 +17,34 @@ import java.time.LocalDateTime;
  */
 @Configuration
 public class MyBatisPlusConfig {
+
+    /**
+     * 配置SqlSessionFactory
+     */
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+        MybatisSqlSessionFactoryBean sqlSessionFactoryBean = new MybatisSqlSessionFactoryBean();
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        
+        // 设置mapper.xml的位置
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        sqlSessionFactoryBean.setMapperLocations(resolver.getResources("classpath*:mapper/*.xml"));
+        
+        // 设置实体类别名包路径
+        sqlSessionFactoryBean.setTypeAliasesPackage("com.example.shiyanshi.entity");
+        
+        // MyBatis配置
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        configuration.setMapUnderscoreToCamelCase(true);
+        sqlSessionFactoryBean.setConfiguration(configuration);
+
+        // 配置 MyBatis-Plus 全局设置，注入 MPJSqlInjector（避免 Invalid bound statement 错误）
+        com.baomidou.mybatisplus.core.config.GlobalConfig globalConfig = new com.baomidou.mybatisplus.core.config.GlobalConfig();
+        globalConfig.setSqlInjector(new com.github.yulichang.injector.MPJSqlInjector());
+        sqlSessionFactoryBean.setGlobalConfig(globalConfig);
+        
+        return sqlSessionFactoryBean.getObject();
+    }
 
     /**
      * 配置字段自动填充处理器
@@ -32,5 +65,14 @@ public class MyBatisPlusConfig {
                 this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
             }
         };
+    }
+
+    /**
+     * 启用 MyBatis-Plus-Join 的 SQL 注入器，支持 MPJBaseMapper 的关联查询方法
+     * 解决 Invalid bound statement (not found): xxx.selectJoinList 等问题
+     */
+    @Bean
+    public com.github.yulichang.injector.MPJSqlInjector mpjSqlInjector() {
+        return new com.github.yulichang.injector.MPJSqlInjector();
     }
 }

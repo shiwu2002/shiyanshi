@@ -4,8 +4,12 @@ import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.User;
 import com.example.shiyanshi.service.UserService;
 import com.example.shiyanshi.service.EmailService;
+import com.example.shiyanshi.util.JWTUtil;
+import com.example.shiyanshi.service.ReservationService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,17 +26,32 @@ public class UserController {
     
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ReservationService reservationService;
     
     /**
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<User> login(@RequestBody Map<String, String> params) {
+    public Result<Map<String, Object>> login(@RequestBody Map<String, String> params) {
         try {
             String username = params.get("username");
             String password = params.get("password");
             User user = userService.login(username, password);
-            return Result.success(user);
+            
+            // 生成JWT token
+            String token = JWTUtil.generateToken(user.getId(), user.getUsername(), user.getUserType());
+            
+            // 返回token和关键用户信息
+            Map<String, Object> result = new HashMap<>();
+            result.put("token", token);
+            result.put("userId", user.getId());
+            result.put("username", user.getUsername());
+            result.put("userType", user.getUserType());
+            result.put("realName", user.getRealName());
+            
+            return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -368,6 +387,29 @@ public class UserController {
             return Result.success("验证邮件已重新发送", null);
         } catch (Exception e) {
             return Result.error("发送失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 用户统计数据（从JWT拦截器注入的用户ID或请求参数获取）
+     * 前端调用 /api/user/statistics 时无需传 userId，优先从 request.attribute("userId") 读取
+     */
+    @GetMapping("/statistics")
+    public Result<Map<String, Integer>> getUserStatistics(HttpServletRequest request,
+                                              @RequestParam(value = "userId", required = false) Long userId) {
+        try {
+            Object uidAttr = request.getAttribute("userId");
+            Long uid = userId;
+            if (uid == null && uidAttr != null) {
+                uid = (uidAttr instanceof Long) ? (Long) uidAttr : Long.valueOf(uidAttr.toString());
+            }
+            if (uid == null) {
+                return Result.error("缺少用户身份信息，请登录后重试");
+            }
+            Map<String, Integer> stats = reservationService.getUserReservationStats(uid);
+            return Result.success(stats);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
         }
     }
 }
