@@ -7,40 +7,66 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.PrintWriter;
 
 /**
  * JWT拦截器
  * 用于验证请求中的Token是否有效
  */
+@Slf4j
 public class JWTInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 处理跨域预检请求
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            log.info("OPTIONS request: {}", request.getRequestURI());
             return true;
         }
 
         // 从请求头中获取Token
         String token = request.getHeader("Authorization");
-        
+
+        log.info("Incoming request: {} {}, Authorization: {}", request.getMethod(), request.getRequestURI(), 
+                 token != null ? (token.length() > 50 ? token.substring(0, 50) + "..." : token) : "null");
+
         // 也支持从token参数获取
         if (token == null || token.isEmpty()) {
             token = request.getParameter("token");
+            if (token != null) {
+                log.info("Token from parameter: {}", token.substring(0, Math.min(50, token.length())) + "...");
+            }
         }
         
         // 如果Token以"Bearer "开头，去掉前缀
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
+            log.debug("Removed 'Bearer ' prefix from token");
         }
 
         // 验证Token
-        if (token == null || token.isEmpty() || !JWTUtil.validateToken(token)) {
+        if (token == null || token.isEmpty()) {
+            log.warn("Token is null or empty for request: {} {}", request.getMethod(), request.getRequestURI());
             response.setContentType("application/json;charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             
             Result<?> result = Result.error(401, "未授权，请先登录");
+            PrintWriter writer = response.getWriter();
+            writer.write(JSON.toJSONString(result));
+            writer.flush();
+            writer.close();
+            
+            return false;
+        }
+        
+        if (!JWTUtil.validateToken(token)) {
+            log.warn("Token validation failed for request: {} {}", request.getMethod(), request.getRequestURI());
+            response.setContentType("application/json;charset=UTF-8");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            
+            Result<?> result = Result.error(401, "Token无效或已过期，请重新登录");
             PrintWriter writer = response.getWriter();
             writer.write(JSON.toJSONString(result));
             writer.flush();
@@ -53,6 +79,8 @@ public class JWTInterceptor implements HandlerInterceptor {
         Long userId = JWTUtil.getUserIdFromToken(token);
         String username = JWTUtil.getUsernameFromToken(token);
         Integer userType = JWTUtil.getUserTypeFromToken(token);
+        
+        log.info("Token validated successfully. User: {}(ID:{}), Type: {}", username, userId, userType);
         
         request.setAttribute("userId", userId);
         request.setAttribute("username", username);

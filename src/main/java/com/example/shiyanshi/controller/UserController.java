@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.User;
 import com.example.shiyanshi.service.UserService;
@@ -113,8 +114,9 @@ public class UserController {
     }
     
     /**
-     * 更新用户信息
+     * 更新用户信息（仅超级管理员）
      */
+    @RequirePermission(value = 3, description = "更新用户信息需要超级管理员权限")
     @PutMapping
     public Result<Void> update(@RequestBody User user) {
         try {
@@ -124,6 +126,25 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+
+    /**
+     * 更新用户状态（仅超级管理员）
+     */
+    @RequirePermission(value = 3, description = "更新用户状态需要超级管理员权限")
+    @PutMapping("/status")
+    public Result<Void> updateStatus(@RequestBody Map<String, Object> params) {
+        try {
+            String userId = params.get("userId").toString();
+            Integer status = Integer.valueOf(params.get("status").toString());
+            userService.updateStatus(userId, status);
+            return Result.success("更新成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+
+    
     
     /**
      * 修改密码
@@ -142,8 +163,9 @@ public class UserController {
     }
     
     /**
-     * 重置密码（管理员功能）
+     * 重置密码（仅超级管理员）
      */
+    @RequirePermission(value = 3, description = "重置密码需要超级管理员权限")
     @PutMapping("/reset-password")
     public Result<Void> resetPassword(@RequestBody Map<String, Object> params) {
         try {
@@ -157,8 +179,9 @@ public class UserController {
     }
     
     /**
-     * 删除用户
+     * 删除用户（仅超级管理员）
      */
+    @RequirePermission(value = 3, description = "删除用户需要超级管理员权限")
     @DeleteMapping("/{id}")
     public Result<Void> deleteById(@PathVariable Long id) {
         try {

@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.Laboratory;
 import com.example.shiyanshi.service.LaboratoryService;
@@ -21,9 +22,10 @@ public class LaboratoryController {
     private LaboratoryService laboratoryService;
 
     /**
-     * 添加实验室
+     * 添加实验室（需要管理员及以上权限）
      * POST /api/laboratory
      */
+    @RequirePermission(value = 2, description = "添加实验室需要管理员及以上权限")
     @PostMapping
     public Result add(@RequestBody Laboratory laboratory) {
         try {
@@ -114,6 +116,7 @@ public class LaboratoryController {
      * 更新实验室信息
      * PUT /api/laboratory
      */
+    @RequirePermission(value = 2, description = "更新实验室信息需要管理员及以上权限")
     @PutMapping
     public Result update(@RequestBody Laboratory laboratory) {
         try {
@@ -131,6 +134,7 @@ public class LaboratoryController {
      * 更新实验室状态
      * PUT /api/laboratory/status
      */
+    @RequirePermission(value = 2, description = "更新实验室状态需要管理员及以上权限")
     @PutMapping("/status")
     public Result updateStatus(@RequestParam Long id, @RequestParam Integer status) {
         try {
@@ -151,6 +155,7 @@ public class LaboratoryController {
      * 删除实验室
      * DELETE /api/laboratory/{id}
      */
+    @RequirePermission(value = 3, description = "删除实验室需要超级管理员权限")
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable Long id) {
         try {

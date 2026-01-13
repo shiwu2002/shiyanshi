@@ -15,7 +15,14 @@ public class UserService {
     
     @Autowired
     private UserMapper userMapper;
-    
+
+
+    public void updateStatus(String userId, Integer status) {
+        userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<User>()
+                .set(User::getStatus, status)
+                .eq(User::getId, userId));
+    }
+
     /**
      * 用户登录
      */

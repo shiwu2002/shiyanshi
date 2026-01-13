@@ -27,7 +27,7 @@ public class MessageService extends ServiceImpl<MessageMapper, Message> {
     private UserService userService;
     
     /**
-     * 发送系统消息
+     * 发送系统消息（单个用户）
      */
     @Transactional
     public Message sendSystemMessage(Long receiverId, String title, String content, Integer priority) {
@@ -51,6 +51,42 @@ public class MessageService extends ServiceImpl<MessageMapper, Message> {
         
         messageMapper.insert(message);
         return message;
+    }
+    
+    /**
+     * 广播系统消息给所有用户
+     */
+    @Transactional
+    public int broadcastSystemMessage(String title, String content, Integer priority) {
+        // 获取所有用户
+        List<User> allUsers = userService.findAll();
+        if (allUsers == null || allUsers.isEmpty()) {
+            return 0;
+        }
+        
+        int count = 0;
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 为每个用户创建一条系统消息
+        for (User user : allUsers) {
+            Message message = new Message();
+            message.setSenderId(0L);
+            message.setSenderName("系统");
+            message.setReceiverId(user.getId());
+            message.setReceiverName(user.getUsername());
+            message.setMessageType("system");
+            message.setTitle(title);
+            message.setContent(content);
+            message.setIsRead(0);
+            message.setPriority(priority != null ? priority : 0);
+            message.setCreateTime(now);
+            message.setDeleted(0);
+            
+            messageMapper.insert(message);
+            count++;
+        }
+        
+        return count;
     }
     
     /**

@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.entity.Reservation;
 import com.example.shiyanshi.service.ReservationService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,6 +38,7 @@ public class ReportController {
      * @param status 预约状态（可选）
      * @param response HTTP响应对象
      */
+    @RequirePermission(value = 2, description = "导出预约报表需要管理员及以上权限")
     @GetMapping("/export-reservations")
     public void exportReservations(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
@@ -303,6 +305,7 @@ public class ReportController {
      * 导出统计报表
      * 包含预约数量、使用率等统计信息
      */
+    @RequirePermission(value = 2, description = "导出统计报表需要管理员及以上权限")
     @GetMapping("/export-statistics")
     public void exportStatistics(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,

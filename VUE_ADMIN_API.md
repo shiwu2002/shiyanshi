@@ -580,9 +580,22 @@
 - **出参**: 时间段列表
 
 ### 5.6 更新时间段信息
-- **接口**: `PUT /timeslot`
+- **接口**: `PUT /timeslot` 或 `PUT /timeslot/{id}`
 - **功能**: 更新时间段信息
-- **入参**:
+- **入参方式1**（推荐）: `PUT /timeslot/{id}` - RESTful风格
+  - `id` (路径参数) - 时间段ID
+  - 请求体:
+```json
+{
+  "slotName": "上午第一节",
+  "startTime": "08:00",
+  "endTime": "10:00",
+  "status": 1,
+  "sortOrder": 1
+}
+```
+- **入参方式2**: `PUT /timeslot` - 传统方式
+  - 请求体必须包含id:
 ```json
 {
   "id": 1,

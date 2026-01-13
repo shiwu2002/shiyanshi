@@ -11,7 +11,12 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
-    
+
+    /**
+     * 更新用户状态
+     */
+
+
     /**
      * 根据用户名查询用户
      * MyBatis-Plus提供的selectOne方法可替代此方法

@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -151,6 +152,7 @@ public class FileController {
      * @param type 文件类型
      * @return 包含所有文件信息的Result对象
      */
+    @RequirePermission(value = 2, description = "批量上传文件需要管理员及以上权限")
     @PostMapping("/upload-batch")
     public Result<Map<String, Object>> uploadFiles(
             @RequestParam("files") MultipartFile[] files,
@@ -191,6 +193,7 @@ public class FileController {
      * @param filePath 文件路径
      * @return 删除结果
      */
+    @RequirePermission(value = 2, description = "删除文件需要超级管理员权限")
     @DeleteMapping("/delete")
     public Result<Void> deleteFile(@RequestParam("path") String filePath) {
         try {

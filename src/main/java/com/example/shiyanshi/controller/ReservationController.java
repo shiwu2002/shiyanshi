@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.Reservation;
 import com.example.shiyanshi.service.ReservationService;
@@ -127,9 +128,10 @@ public class ReservationController {
     }
 
     /**
-     * 审核预约（通过）
+     * 审核预约（通过）（需要管理员及以上权限）
      * PUT /api/reservation/approve/{id}
      */
+    @RequirePermission(value = 2, description = "审核预约需要管理员及以上权限")
     @PutMapping("/approve/{id}")
     public Result approve(@PathVariable Long id, @RequestParam(required = false) String approvalNote) {
         try {
@@ -141,9 +143,10 @@ public class ReservationController {
     }
 
     /**
-     * 审核预约（拒绝）
+     * 审核预约（拒绝）（需要管理员及以上权限）
      * PUT /api/reservation/reject/{id}
      */
+    @RequirePermission(value = 2, description = "审核预约需要管理员及以上权限")
     @PutMapping("/reject/{id}")
     public Result reject(@PathVariable Long id, @RequestParam(required = false) String approvalNote) {
         try {
@@ -186,6 +189,7 @@ public class ReservationController {
      * 更新预约信息
      * PUT /api/reservation
      */
+    @RequirePermission(value = 2, description = "更新预约信息需要管理员及以上权限")
     @PutMapping
     public Result update(@RequestBody Reservation reservation) {
         try {
@@ -203,6 +207,7 @@ public class ReservationController {
      * 删除预约
      * DELETE /api/reservation/{id}
      */
+    @RequirePermission(value = 3, description = "删除预约需要超级管理员权限")
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable Long id) {
         try {

@@ -24,7 +24,6 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/user/login",           // 登录接口不拦截
                         "/api/user/register",        // 注册接口不拦截
                         "/api/laboratory/list",      // 实验室列表查询不拦截（游客可查看）
-                        "/api/laboratory/{id}",      // 实验室详情查询不拦截（游客可查看）
                         "/api/timeslot/list",        // 时间段列表查询不拦截（游客可查看）
                         "/api/timeslot/enabled"      // 启用时间段查询不拦截（游客可查看）
                 );

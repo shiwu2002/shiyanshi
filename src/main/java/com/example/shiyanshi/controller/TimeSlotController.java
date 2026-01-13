@@ -1,5 +1,6 @@
 package com.example.shiyanshi.controller;
 
+import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.TimeSlot;
 import com.example.shiyanshi.mapper.TimeSlotMapper;
@@ -24,6 +25,7 @@ public class TimeSlotController {
      * 添加时间段
      * POST /api/timeslot
      */
+    @RequirePermission(value = 2, description = "添加时间段需要管理员及以上权限")
     @PostMapping
     public Result add(@RequestBody TimeSlot timeSlot) {
         try {
@@ -104,6 +106,7 @@ public class TimeSlotController {
      * 更新时间段信息
      * PUT /api/timeslot
      */
+    @RequirePermission(value = 2, description = "更新时间段需要管理员及以上权限")
     @PutMapping
     public Result update(@RequestBody TimeSlot timeSlot) {
         try {
@@ -125,9 +128,37 @@ public class TimeSlotController {
     }
 
     /**
+     * 更新时间段信息（RESTful风格）
+     * PUT /api/timeslot/{id}
+     */
+    @RequirePermission(value = 2, description = "更新时间段需要管理员及以上权限")
+    @PutMapping("/{id}")
+    public Result updateById(@PathVariable Long id, @RequestBody TimeSlot timeSlot) {
+        try {
+            if (id == null) {
+                return Result.error("时间段ID不能为空");
+            }
+            TimeSlot existing = timeSlotMapper.findById(id);
+            if (existing == null) {
+                return Result.error("时间段不存在");
+            }
+            // 设置ID以确保更新正确的记录
+            timeSlot.setId(id);
+            int result = timeSlotMapper.update(timeSlot);
+            if (result > 0) {
+                return Result.success("时间段信息更新成功");
+            }
+            return Result.error("时间段信息更新失败");
+        } catch (Exception e) {
+            return Result.error("更新时间段信息时发生错误：" + e.getMessage());
+        }
+    }
+
+    /**
      * 更新时间段状态
      * PUT /api/timeslot/status
      */
+    @RequirePermission(value = 2, description = "更新时间段状态需要管理员及以上权限")
     @PutMapping("/status")
     public Result updateStatus(@RequestParam Long id, @RequestParam Integer status) {
         try {
@@ -155,6 +186,7 @@ public class TimeSlotController {
      * 删除时间段
      * DELETE /api/timeslot/{id}
      */
+    @RequirePermission(value = 3, description = "删除时间段需要超级管理员权限")
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable Long id) {
         try {
@@ -176,6 +208,7 @@ public class TimeSlotController {
      * 批量更新时间段排序
      * PUT /api/timeslot/batch-sort
      */
+    @RequirePermission(value = 2, description = "批量更新时间段排序需要管理员及以上权限")
     @PutMapping("/batch-sort")
     public Result batchUpdateSort(@RequestBody List<TimeSlot> timeSlots) {
         try {
