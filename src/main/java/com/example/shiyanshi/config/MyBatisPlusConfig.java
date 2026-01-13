@@ -22,7 +22,7 @@ public class MyBatisPlusConfig {
      * 配置SqlSessionFactory
      */
     @Bean
-    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource, MetaObjectHandler metaObjectHandler) throws Exception {
         MybatisSqlSessionFactoryBean sqlSessionFactoryBean = new MybatisSqlSessionFactoryBean();
         sqlSessionFactoryBean.setDataSource(dataSource);
         
@@ -38,9 +38,11 @@ public class MyBatisPlusConfig {
         configuration.setMapUnderscoreToCamelCase(true);
         sqlSessionFactoryBean.setConfiguration(configuration);
 
-        // 配置 MyBatis-Plus 全局设置，注入 MPJSqlInjector（避免 Invalid bound statement 错误）
+        // 配置 MyBatis-Plus 全局设置
         com.baomidou.mybatisplus.core.config.GlobalConfig globalConfig = new com.baomidou.mybatisplus.core.config.GlobalConfig();
         globalConfig.setSqlInjector(new com.github.yulichang.injector.MPJSqlInjector());
+        // 注入自动填充处理器，使创建时间和更新时间能够自动填充
+        globalConfig.setMetaObjectHandler(metaObjectHandler);
         sqlSessionFactoryBean.setGlobalConfig(globalConfig);
         
         return sqlSessionFactoryBean.getObject();

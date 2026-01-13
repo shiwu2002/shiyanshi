@@ -117,9 +117,11 @@ public class UserController {
      * 更新用户信息（仅超级管理员）
      */
     @RequirePermission(value = 3, description = "更新用户信息需要超级管理员权限")
-    @PutMapping
-    public Result<Void> update(@RequestBody User user) {
+    @PutMapping("/{id}")
+    public Result<Void> update(@PathVariable Long id, @RequestBody User user) {
         try {
+            // 确保更新的是指定ID的用户
+            user.setId(id);
             userService.update(user);
             return Result.success("更新成功", null);
         } catch (Exception e) {
