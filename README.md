@@ -9,74 +9,110 @@
 ## 技术栈
 
 - **框架**: Spring Boot 3.4.1
-- **持久层**: MyBatis 3.0.4
+- **持久层**: MyBatis-Plus 3.5.6
 - **数据库**: MySQL 8.0+
 - **认证**: JWT (JSON Web Token)
 - **加密**: MD5
-- **JSON处理**: FastJSON 2.0.43
+- **缓存**: Redis
+- **邮件**: Spring Mail
 - **工具**: Lombok
+- **AOP**: Spring AOP（权限验证）
 
 ## 功能特性
 
 ### 1. 用户管理
-- 用户注册/登录
+- 用户注册/登录（支持邮箱验证）
 - 用户信息查询和更新
 - 用户密码修改
-- 管理员用户管理（CRUD）
-- 用户状态管理
+- 用户类型管理（学生、教师、管理员）
+- 用户状态管理（启用/禁用）
+- 基于用户类型的权限控制
 
 ### 2. 实验室管理
 - 实验室信息的增删改查
 - 实验室列表查询（支持条件筛选）
 - 实验室状态管理（可预约/维护中）
 - 实验室详情查询
+- 实验室容量和设备信息管理
 
 ### 3. 预约管理
 - 创建预约申请
 - 预约审核（通过/拒绝）
 - 预约取消
 - 预约完成
-- 预约评价
-- 预约记录查询（支持多种条件）
-- 时间冲突检测
+- 预约记录查询（支持用户ID、实验室ID、状态、日期范围等多种条件）
+- 时间冲突自动检测
+- 预约统计查询（按状态统计）
+- 实验室预约情况查询
 
 ### 4. 时间段管理
 - 时间段配置的增删改查
-- 时间段状态管理
+- 时间段状态管理（启用/禁用）
 - 时间段排序
 - 批量更新排序
 - 时间段统计
+
+### 5. 消息管理
+- 系统消息发送和接收
+- 消息状态管理（已读/未读）
+- 基于阈值的自动消息通知（实验室预约达到阈值时自动通知）
+
+### 6. 文件管理
+- 文件上传和下载
+- 头像上传功能
+- 文件类型验证
+
+### 7. 报表管理
+- 预约数据导出（Excel格式）
+- 统计报表生成
 
 ## 项目结构
 
 ```
 src/main/java/com/example/shiyanshi/
+├── annotation/          # 自定义注解
+│   └── RequirePermission.java  # 权限验证注解
+├── aspect/              # AOP切面
+│   └── PermissionAspect.java   # 权限验证切面
 ├── common/              # 公共类
 │   └── Result.java      # 统一响应结果封装
 ├── config/              # 配置类
+│   ├── MyBatisPlusConfig.java  # MyBatis-Plus配置
+│   ├── ResourceConfig.java     # 资源路径配置
 │   └── WebConfig.java   # Web配置（拦截器、CORS）
 ├── controller/          # 控制器层
 │   ├── UserController.java
 │   ├── LaboratoryController.java
 │   ├── ReservationController.java
-│   └── TimeSlotController.java
+│   ├── TimeSlotController.java
+│   ├── FileController.java
+│   ├── MessageController.java
+│   └── ReportController.java
 ├── entity/              # 实体类
 │   ├── User.java
 │   ├── Laboratory.java
 │   ├── Reservation.java
-│   └── TimeSlot.java
+│   ├── TimeSlot.java
+│   └── Message.java
+├── exception/           # 异常处理
+│   └── GlobalExceptionHandler.java
 ├── interceptor/         # 拦截器
 │   └── JWTInterceptor.java
 ├── mapper/              # 数据访问层
 │   ├── UserMapper.java
 │   ├── LaboratoryMapper.java
 │   ├── ReservationMapper.java
-│   └── TimeSlotMapper.java
+│   ├── TimeSlotMapper.java
+│   └── MessageMapper.java
 ├── service/             # 业务逻辑层
 │   ├── UserService.java
 │   ├── LaboratoryService.java
 │   ├── ReservationService.java
-│   └── TimeSlotService.java
+│   ├── TimeSlotService.java
+│   ├── MessageService.java
+│   └── EmailService.java
+├── task/                # 定时任务
+│   └── ReservationReminderTask.java
 └── util/                # 工具类
     ├── JWTUtil.java     # JWT工具
     └── MD5Util.java     # MD5加密工具
@@ -233,16 +269,10 @@ java -jar target/shiyanshi-0.0.1-SNAPSHOT.jar
 - **接口**: `PUT /api/reservation/complete/{id}`
 - **请求头**: `Authorization: Bearer {token}`
 
-#### 7. 评价预约
-- **接口**: `PUT /api/reservation/rate/{id}`
+#### 7. 预约统计查询
+- **接口**: `GET /api/reservation/statistics`
 - **请求头**: `Authorization: Bearer {token}`
-- **参数**:
-  ```json
-  {
-    "rating": 5,
-    "comment": "评价内容"
-  }
-  ```
+- **参数**: `userId`（可选，用户ID）
 
 ### 时间段接口
 
@@ -285,7 +315,7 @@ java -jar target/shiyanshi-0.0.1-SNAPSHOT.jar
 - real_name: 真实姓名
 - phone: 手机号
 - email: 邮箱
-- user_type: 用户类型（0-普通用户，1-管理员）
+- user_type: 用户类型（1-学生，2-教师，3-管理员）
 - status: 状态（0-禁用，1-启用）
 - create_time: 创建时间
 - update_time: 更新时间
