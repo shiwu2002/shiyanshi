@@ -1,6 +1,7 @@
 package com.example.shiyanshi.controller;
 
 import com.example.shiyanshi.annotation.RequirePermission;
+import com.example.shiyanshi.annotation.RequireSelfOrAdmin;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.User;
 import com.example.shiyanshi.service.UserService;
@@ -114,14 +115,36 @@ public class UserController {
     }
     
     /**
-     * 更新用户信息（仅超级管理员）
+     * 更新用户信息（自己或超级管理员）
+     * 注意：用户权限(userType)字段只能由超级管理员修改
      */
-    @RequirePermission(value = 3, description = "更新用户信息需要超级管理员权限")
+    @RequireSelfOrAdmin(idParam = "id", adminLevel = 3, description = "更新用户信息需要自己操作或超级管理员权限")
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody User user) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody User user, HttpServletRequest request) {
         try {
             // 确保更新的是指定ID的用户
             user.setId(id);
+            
+            // 获取当前用户信息
+            Object currentUserTypeObj = request.getAttribute("userType");
+            Integer currentUserType = null;
+            if (currentUserTypeObj != null) {
+                currentUserType = (currentUserTypeObj instanceof Integer) ? (Integer) currentUserTypeObj 
+                    : Integer.valueOf(currentUserTypeObj.toString());
+            }
+            
+            // 权限字段安全检查：只有超级管理员可以修改用户权限(userType)
+            if (user.getUserType() != null) {
+                // 当前用户不是超级管理员，但尝试修改用户权限
+                if (currentUserType == null || currentUserType != 3) {
+                    // 查找现有用户的权限信息
+                    User existingUser = userService.findById(id);
+                    if (existingUser != null && !existingUser.getUserType().equals(user.getUserType())) {
+                        return Result.error("权限不足：只有超级管理员可以修改用户权限");
+                    }
+                }
+            }
+            
             userService.update(user);
             return Result.success("更新成功", null);
         } catch (Exception e) {
