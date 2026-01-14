@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约提醒邮件</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .reminder-box {
+            background-color: #e6f7ff;
+            border: 2px solid #91d5ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .reminder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .reminder-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fafafa;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .info-table th, .info-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .info-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            color: #333;
+            width: 30%;
+        }
+        .urgent {
+            background-color: #fff7e6;
+            border-left: 4px solid #fa8c16;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">实验室预约系统</div>
+            <div style="color: #666; font-size: 14px;">预约提醒通知</div>
+        </div>
+        
+        <div class="content">
+            <h2 style="color: #333; margin-bottom: 20px;">尊敬的 <span th:text="${username}">用户</span>，您好！</h2>
+            
+            <p>您有一个即将开始的实验室预约，请合理安排时间：</p>
+            
+            <div class="reminder-box">
+                <div class="reminder-icon">⏰</div>
+                <div class="reminder-title">预约提醒</div>
+                <p style="font-size: 18px; margin: 10px 0;">请注意，您的实验室预约即将开始！</p>
+            </div>
+            
+            <table class="info-table">
+                <tr>
+                    <th>实验室名称</th>
+                    <td th:text="${labName}">未指定</td>
+                </tr>
+                <tr>
+                    <th>预约日期</th>
+                    <td th:text="${reservationDate}">未指定</td>
+                </tr>
+                <tr>
+                    <th>时间段</th>
+                    <td th:text="${timeSlot}">未指定</td>
+                </tr>
+                <tr>
+                    <th>当前状态</th>
+                    <td style="color: #52c41a; font-weight: bold;">已通过审核</td>
+                </tr>
+            </table>
+            
+            <div class="urgent">
+                <p><strong>重要提醒：</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>请准时到达预约的实验室地点</li>
+                    <li>请携带相关证件（如学生证、工作证等）</li>
+                    <li>如需取消预约，请立即联系管理员</li>
+                    <li>迟到可能会影响其他用户的预约安排</li>
+                </ul>
+            </div>
+            
+            <div style="background-color: #f6ffed; border-left: 4px solid #52c41a; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p><strong>实验室使用注意事项：</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>遵守实验室安全管理规定</li>
+                    <li>爱护实验室设备和仪器</li>
+                    <li>使用完毕后请及时清理工作区域</li>
+                    <li>如有设备故障，请及时报告管理员</li>
+                </ul>
+            </div>
+            
+            <p style="text-align: center; margin: 20px 0;">
+                <a th:href="${baseUrl}" style="display: inline-block; background-color: #1890ff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">查看预约详情</a>
+            </p>
+            
+            <p style="text-align: center; color: #666; font-size: 14px;">
+                祝您实验顺利！
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>此邮件为系统自动发送的预约提醒，请勿直接回复</p>
+            <p>如有疑问，请联系系统管理员</p>
+            <p style="margin-top: 10px;">© 2024 实验室预约系统 版权所有</p>
+        </div>
+    </div>
+</body>
+</html>

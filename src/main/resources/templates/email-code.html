@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证码邮件</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .code-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px dashed #dee2e6;
+        }
+        .verification-code {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #1890ff;
+            padding: 15px;
+            background-color: #e6f7ff;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .purpose {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .expire-info {
+            color: #ff4d4f;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .tips {
+            background-color: #fff7e6;
+            border-left: 4px solid #ffa940;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+        .warning {
+            color: #ff4d4f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">实验室预约系统</div>
+            <div style="color: #666; font-size: 14px;">安全验证邮件</div>
+        </div>
+        
+        <div class="content">
+            <h2 style="color: #333; margin-bottom: 20px;">尊敬的用户，您好！</h2>
+            
+            <p>您正在进行 <span class="purpose" th:text="${purpose}">身份验证</span> 操作，请使用以下验证码完成验证：</p>
+            
+            <div class="code-container">
+                <div style="margin-bottom: 10px; color: #666;">您的验证码为：</div>
+                <div class="verification-code" th:text="${code}">123456</div>
+                <div class="expire-info">
+                    验证码将在 <span th:text="${expireMinutes}">5</span> 分钟内有效，请尽快使用
+                </div>
+            </div>
+            
+            <div class="tips">
+                <p><strong>安全提示：</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>请勿将验证码泄露给他人</li>
+                    <li>如非本人操作，请忽略此邮件</li>
+                    <li>系统不会通过电话或短信向您索要验证码</li>
+                </ul>
+            </div>
+            
+            <p>如果您没有进行此操作，请立即修改您的账户密码，并联系系统管理员。</p>
+        </div>
+        
+        <div class="footer">
+            <p>此邮件由系统自动发送，请勿直接回复</p>
+            <p>如有疑问，请联系系统管理员或查看帮助文档</p>
+            <p class="warning">请注意：验证码仅用于验证身份，不会用于其他用途</p>
+            <p style="margin-top: 10px;">© 2024 实验室预约系统 版权所有</p>
+        </div>
+    </div>
+</body>
+</html>

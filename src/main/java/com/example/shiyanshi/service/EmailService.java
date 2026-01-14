@@ -34,11 +34,9 @@ public class EmailService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    @Value("${system.email.from}")
-    private String from;
+    private String from = "848572306@qq.com";
 
-    @Value("${system.email.from-name}")
-    private String fromName;
+    private String fromName = "实验室预约系统";
 
     @Value("${system.base-url}")
     private String baseUrl;
@@ -220,9 +218,22 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            helper.setFrom(from, fromName);
+            // 处理中文发件人名称编码问题
+            String encodedFromName = "=?UTF-8?B?" + 
+                java.util.Base64.getEncoder().encodeToString(fromName.getBytes("UTF-8")) + "?=";
+            String encodedFrom = encodedFromName + " <" + from + ">";
+            
+            // 处理中文主题编码问题
+            String encodedSubject = "=?UTF-8?B?" + 
+                java.util.Base64.getEncoder().encodeToString(subject.getBytes("UTF-8")) + "?=";
+            
+            // 记录编码后的主题用于调试
+            log.debug("原始邮件主题: {}", subject);
+            log.debug("编码后邮件主题: {}", encodedSubject);
+            
+            helper.setFrom(encodedFrom);
             helper.setTo(to);
-            helper.setSubject(subject);
+            helper.setSubject(encodedSubject);
             helper.setText(content, true);
             
             mailSender.send(message);
