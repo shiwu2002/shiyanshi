@@ -4,8 +4,10 @@ import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.annotation.RequireSelfOrAdmin;
 import com.example.shiyanshi.common.Result;
 import com.example.shiyanshi.entity.User;
+import com.example.shiyanshi.entity.UserWechatAuth;
 import com.example.shiyanshi.service.UserService;
 import com.example.shiyanshi.service.EmailService;
+import com.example.shiyanshi.service.UserWechatAuthService;
 import com.example.shiyanshi.util.JWTUtil;
 import com.example.shiyanshi.service.ReservationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,14 +34,34 @@ public class UserController {
     @Autowired
     private ReservationService reservationService;
     
+    @Autowired
+    private UserWechatAuthService userWechatAuthService;
+    
+    private static final String PLATFORM_MINI_PROGRAM = "mini_program";
+    
     /**
-     * 用户登录
+     * 用户登录（支持微信绑定）
+     * 
+     * 请求示例：
+     * POST /api/user/login
+     * {
+     *   "username": "用户名",
+     *   "password": "密码",
+     *   "openid": "微信openid（可选，用于自动绑定）",
+     *   "unionid": "微信unionid（可选）",
+     *   "sessionKey": "微信sessionKey（可选）"
+     * }
      */
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody Map<String, String> params) {
         try {
             String username = params.get("username");
             String password = params.get("password");
+            String openid = params.get("openid");
+            String unionid = params.get("unionid");
+            String sessionKey = params.get("sessionKey");
+            
+            // 用户名密码登录
             User user = userService.login(username, password);
             
             // 生成JWT token
@@ -53,20 +75,115 @@ public class UserController {
             result.put("userType", user.getUserType());
             result.put("realName", user.getRealName());
             
-            return Result.success(result);
+            // 如果提供了openid，自动绑定微信
+            if (openid != null && !openid.trim().isEmpty()) {
+                try {
+                    // 检查该openid是否已被其他用户绑定
+                    UserWechatAuth existingAuth = userWechatAuthService.findByPlatformAndOpenid(PLATFORM_MINI_PROGRAM, openid);
+                    
+                    if (existingAuth != null && existingAuth.getBindStatus() == 1 && 
+                        existingAuth.getUserId() != null && !existingAuth.getUserId().equals(user.getId())) {
+                        // openid已被其他用户绑定
+                        result.put("bindWarning", "该微信已绑定其他账号");
+                    } else {
+                        // 执行绑定
+                        UserWechatAuth bindResult = userWechatAuthService.bind(
+                            user.getId(), 
+                            PLATFORM_MINI_PROGRAM, 
+                            openid, 
+                            unionid, 
+                            sessionKey
+                        );
+                        result.put("wechatBound", true);
+                        result.put("openid", bindResult.getOpenid());
+                        result.put("unionid", bindResult.getUnionid());
+                    }
+                } catch (Exception e) {
+                    // 绑定失败不影响登录，仅记录警告
+                    result.put("bindWarning", "微信绑定失败：" + e.getMessage());
+                }
+            }
+            
+            return Result.success("登录成功", result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }
     
     /**
-     * 用户注册
+     * 用户注册（支持微信绑定）
+     * 
+     * 请求示例：
+     * POST /api/user/register
+     * {
+     *   "username": "用户名",
+     *   "password": "密码",
+     *   "email": "邮箱（可选）",
+     *   "realName": "真实姓名（可选）",
+     *   "openid": "微信openid（可选，用于自动绑定）",
+     *   "unionid": "微信unionid（可选）",
+     *   "sessionKey": "微信sessionKey（可选）"
+     * }
      */
     @PostMapping("/register")
-    public Result<User> register(@RequestBody User user) {
+    public Result<Map<String, Object>> register(@RequestBody Map<String, Object> params) {
         try {
+            // 构建User对象
+            User user = new User();
+            user.setUsername(params.get("username") != null ? params.get("username").toString() : null);
+            user.setPassword(params.get("password") != null ? params.get("password").toString() : null);
+            user.setEmail(params.get("email") != null ? params.get("email").toString() : null);
+            user.setRealName(params.get("realName") != null ? params.get("realName").toString() : null);
+            
+            // 注册用户
             User newUser = userService.register(user);
-            return Result.success("注册成功", newUser);
+            
+            // 生成JWT token
+            String token = JWTUtil.generateToken(newUser.getId(), newUser.getUsername(), newUser.getUserType());
+            
+            // 构建返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("token", token);
+            result.put("userId", newUser.getId());
+            result.put("username", newUser.getUsername());
+            result.put("userType", newUser.getUserType());
+            result.put("realName", newUser.getRealName());
+            result.put("email", newUser.getEmail());
+            
+            // 如果提供了openid，自动绑定微信
+            String openid = params.get("openid") != null ? params.get("openid").toString() : null;
+            String unionid = params.get("unionid") != null ? params.get("unionid").toString() : null;
+            String sessionKey = params.get("sessionKey") != null ? params.get("sessionKey").toString() : null;
+            
+            if (openid != null && !openid.trim().isEmpty()) {
+                try {
+                    // 检查该openid是否已被其他用户绑定
+                    UserWechatAuth existingAuth = userWechatAuthService.findByPlatformAndOpenid(PLATFORM_MINI_PROGRAM, openid);
+                    
+                    if (existingAuth != null && existingAuth.getBindStatus() == 1 && 
+                        existingAuth.getUserId() != null && !existingAuth.getUserId().equals(newUser.getId())) {
+                        // openid已被其他用户绑定
+                        result.put("bindWarning", "该微信已绑定其他账号");
+                    } else {
+                        // 执行绑定
+                        UserWechatAuth bindResult = userWechatAuthService.bind(
+                            newUser.getId(), 
+                            PLATFORM_MINI_PROGRAM, 
+                            openid, 
+                            unionid, 
+                            sessionKey
+                        );
+                        result.put("wechatBound", true);
+                        result.put("openid", bindResult.getOpenid());
+                        result.put("unionid", bindResult.getUnionid());
+                    }
+                } catch (Exception e) {
+                    // 绑定失败不影响注册，仅记录警告
+                    result.put("bindWarning", "微信绑定失败：" + e.getMessage());
+                }
+            }
+            
+            return Result.success("注册成功", result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

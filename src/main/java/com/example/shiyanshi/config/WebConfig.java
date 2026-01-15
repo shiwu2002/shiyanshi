@@ -30,7 +30,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/user/reset-password-by-email", // 通过邮箱重置密码接口不拦截（公开接口）
                         "/api/laboratory/list",      // 实验室列表查询不拦截（游客可查看）
                         "/api/timeslot/list",        // 时间段列表查询不拦截（游客可查看）
-                        "/api/timeslot/enabled"      // 启用时间段查询不拦截（游客可查看）
+                        "/api/timeslot/enabled",      // 启用时间段查询不拦截（游客可查看）
+                        "/api/wx/login",
+                        "/api/wx/bind"
                 );
     }
 
