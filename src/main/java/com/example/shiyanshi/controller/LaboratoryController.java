@@ -173,10 +173,9 @@ public class LaboratoryController {
      */
     @GetMapping("/search")
     public Result search(@RequestParam(required = false) String keyword,
-                        @RequestParam(required = false) String labType,
                         @RequestParam(required = false) Integer status) {
         try {
-            List<Laboratory> list = laboratoryService.search(keyword, labType, status);
+            List<Laboratory> list = laboratoryService.search(keyword, status);
             return Result.success(list);
         } catch (Exception e) {
             return Result.error("搜索实验室时发生错误：" + e.getMessage());

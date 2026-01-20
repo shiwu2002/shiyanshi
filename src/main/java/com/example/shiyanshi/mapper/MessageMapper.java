@@ -28,10 +28,22 @@ public interface MessageMapper extends BaseMapper<Message> {
     List<Message> findByReceiverIdAndType(@Param("receiverId") Long receiverId, @Param("messageType") String messageType);
     
     /**
+     * 根据接收者ID和消息类型查询消息列表（分页）
+     */
+    @Select("SELECT * FROM message WHERE receiver_id = #{receiverId} AND message_type = #{messageType} AND deleted = 0 ORDER BY create_time DESC LIMIT #{offset}, #{limit}")
+    List<Message> findByReceiverIdAndTypeWithPage(@Param("receiverId") Long receiverId, @Param("messageType") String messageType, @Param("offset") int offset, @Param("limit") int limit);
+    
+    /**
      * 根据接收者ID查询未读消息列表
      */
     @Select("SELECT * FROM message WHERE receiver_id = #{receiverId} AND is_read = 0 AND deleted = 0 ORDER BY create_time DESC")
     List<Message> findUnreadByReceiverId(@Param("receiverId") Long receiverId);
+    
+    /**
+     * 根据接收者ID查询未读消息列表（分页）
+     */
+    @Select("SELECT * FROM message WHERE receiver_id = #{receiverId} AND is_read = 0 AND deleted = 0 ORDER BY create_time DESC LIMIT #{offset}, #{limit}")
+    List<Message> findUnreadByReceiverIdWithPage(@Param("receiverId") Long receiverId, @Param("offset") int offset, @Param("limit") int limit);
     
     /**
      * 统计接收者的未读消息数量

@@ -26,16 +26,125 @@ public class ReservationController {
      * POST /api/reservation
      */
     @PostMapping
-    public Result create(@RequestBody Reservation reservation) {
+    public Result create(@RequestBody Reservation reservation, jakarta.servlet.http.HttpServletRequest request) {
         try {
+            // 获取原始请求体内容用于调试
+            System.out.println("=== 创建预约请求 ===");
+            System.out.println("请求Content-Type: " + request.getContentType());
+            
+            // 添加详细日志
+            Long requestUserId = (Long) request.getAttribute("userId");
+            System.out.println("请求用户ID(从token): " + requestUserId);
+            System.out.println("预约对象完整内容: " + reservation);
+            System.out.println("预约对象 userId: " + reservation.getUserId());
+            System.out.println("预约对象 labId: " + reservation.getLabId());
+            System.out.println("预约对象 reserveDate: " + reservation.getReserveDate());
+            System.out.println("预约对象 timeSlot: " + reservation.getTimeSlot());
+            System.out.println("预约对象 peopleNum: " + reservation.getPeopleNum());
+            System.out.println("预约对象 purpose: " + reservation.getPurpose());
+            System.out.println("预约对象 experimentName: " + reservation.getExperimentName());
+            System.out.println("预约对象 equipment: " + reservation.getEquipment());
+            
+            // 验证必填字段
             if (reservation.getUserId() == null || reservation.getLabId() == null || 
                 reservation.getReserveDate() == null || reservation.getTimeSlot() == null) {
-                return Result.error("预约信息不完整");
+                String errorMsg = String.format(
+                    "预约信息不完整 - userId: %s, labId: %s, reserveDate: %s, timeSlot: %s, peopleNum: %s",
+                    reservation.getUserId(), reservation.getLabId(), 
+                    reservation.getReserveDate(), reservation.getTimeSlot(),
+                    reservation.getPeopleNum()
+                );
+                System.out.println("ERROR: " + errorMsg);
+                return Result.error(errorMsg);
             }
+            
             Reservation result = reservationService.createReservation(reservation);
+            System.out.println("预约创建成功，ID: " + result.getId());
             return Result.success("预约创建成功", result);
         } catch (Exception e) {
+            System.out.println("创建预约异常: " + e.getMessage());
+            e.printStackTrace();
             return Result.error("创建预约时发生错误：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询当前用户的预约
+     * GET /api/reservation/my?page=1&pageSize=10&status=PENDING
+     * 注意：此接口必须在 /{id} 之前定义，以避免路由冲突
+     */
+    @GetMapping("/my")
+    public Result findMyReservations(
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String status,
+            jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            // 从请求中获取当前用户ID（由JWT拦截器设置）
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return Result.error("未获取到用户信息");
+            }
+            
+            List<Reservation> allReservations = reservationService.findByUserId(userId);
+            
+            // 如果提供了状态参数，进行过滤
+            if (status != null && !status.isEmpty()) {
+                Integer statusCode = parseStatus(status);
+                if (statusCode != null) {
+                    allReservations = allReservations.stream()
+                        .filter(r -> r.getStatus().equals(statusCode))
+                        .collect(java.util.stream.Collectors.toList());
+                }
+            }
+            
+            // 简单分页处理
+            int total = allReservations.size();
+            int start = (page - 1) * pageSize;
+            int end = Math.min(start + pageSize, total);
+            
+            List<Reservation> paginatedList;
+            if (start >= total) {
+                paginatedList = new java.util.ArrayList<>();
+            } else {
+                paginatedList = allReservations.subList(start, end);
+            }
+            
+            // 构造分页结果
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("list", paginatedList);
+            result.put("total", total);
+            result.put("page", page);
+            result.put("pageSize", pageSize);
+            result.put("totalPages", (int) Math.ceil((double) total / pageSize));
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error("查询我的预约时发生错误：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 解析状态字符串为状态码
+     */
+    private Integer parseStatus(String status) {
+        switch (status.toUpperCase()) {
+            case "PENDING":
+                return 0;
+            case "APPROVED":
+                return 1;
+            case "REJECTED":
+                return 2;
+            case "CANCELLED":
+                return 3;
+            case "COMPLETED":
+                return 4;
+            default:
+                try {
+                    return Integer.parseInt(status);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
         }
     }
 
@@ -227,12 +336,22 @@ public class ReservationController {
                                 @RequestParam String reserveDate, 
                                 @RequestParam String timeSlot) {
         try {
+            System.out.println("=== 检查时间冲突 ===");
+            System.out.println("参数 - labId: " + labId + ", reserveDate: " + reserveDate + ", timeSlot: " + timeSlot);
+            
             boolean hasConflict = reservationService.checkTimeConflict(labId, reserveDate, timeSlot);
+            System.out.println("Service返回的冲突检查结果: hasConflict=" + hasConflict);
+            
+            // 修复：hasConflict为true表示有冲突，应该返回错误信息
             if (hasConflict) {
+                System.out.println("返回结果: 该时间段已被预约 (code=500)");
                 return Result.error("该时间段已被预约");
             }
+            System.out.println("返回结果: 该时间段可用 (code=200)");
             return Result.success("该时间段可用");
         } catch (Exception e) {
+            System.out.println("检查冲突异常: " + e.getMessage());
+            e.printStackTrace();
             return Result.error("检查时间冲突时发生错误：" + e.getMessage());
         }
     }

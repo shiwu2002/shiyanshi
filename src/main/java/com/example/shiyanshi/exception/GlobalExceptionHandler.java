@@ -16,6 +16,15 @@ public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     
     /**
+     * 处理文件上传异常
+     */
+    @ExceptionHandler(FileUploadException.class)
+    public Result<Void> handleFileUploadException(FileUploadException e) {
+        logger.warn("文件上传异常: {}", e.getMessage());
+        return Result.error(400, e.getMessage());
+    }
+    
+    /**
      * 处理权限不足异常
      */
     @ExceptionHandler(SecurityException.class)

@@ -2,12 +2,15 @@ package com.example.shiyanshi.controller;
 
 import com.example.shiyanshi.annotation.RequirePermission;
 import com.example.shiyanshi.common.Result;
+import com.example.shiyanshi.entity.Reservation;
 import com.example.shiyanshi.entity.TimeSlot;
 import com.example.shiyanshi.mapper.TimeSlotMapper;
+import com.example.shiyanshi.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 时间段配置控制器
@@ -20,6 +23,9 @@ public class TimeSlotController {
 
     @Autowired
     private TimeSlotMapper timeSlotMapper;
+
+    @Autowired
+    private ReservationService reservationService;
 
     /**
      * 添加时间段
@@ -71,6 +77,59 @@ public class TimeSlotController {
             return Result.success(list);
         } catch (Exception e) {
             return Result.error("查询时间段列表时发生错误：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询可用时间段（排除已被预约的时间段）
+     * GET /api/timeslot/available?labId=1&date=2026-01-19
+     * 参数可选：
+     * - 不提供参数：返回所有启用的时间段
+     * - 只提供labId：返回该实验室的所有可用时间段
+     * - 提供labId和date：返回该实验室在指定日期的可用时间段
+     */
+    @GetMapping("/available")
+    public Result findAvailableTimeSlots(
+            @RequestParam(required = false) Long labId, 
+            @RequestParam(required = false) String date) {
+        try {
+            // 获取所有启用的时间段
+            List<TimeSlot> allTimeSlots = timeSlotMapper.findEnabled();
+            
+            // 如果没有提供labId和date，直接返回所有启用的时间段
+            if (labId == null && date == null) {
+                return Result.success(allTimeSlots);
+            }
+            
+            // 如果只提供了labId但没有date，也返回所有启用的时间段
+            // （因为不知道具体日期，无法判断哪些已被预约）
+            if (labId != null && date == null) {
+                return Result.success(allTimeSlots);
+            }
+            
+            // 如果提供了date但没有labId，返回所有启用的时间段
+            // （因为不知道具体实验室，无法判断哪些已被预约）
+            if (labId == null && date != null) {
+                return Result.success(allTimeSlots);
+            }
+            
+            // 获取该实验室在指定日期的所有预约（状态为0待审核或1已通过的）
+            List<Reservation> reservations = reservationService.findByLabIdAndDate(labId, date);
+            
+            // 提取已被预约的时间段名称
+            List<String> bookedTimeSlots = reservations.stream()
+                .filter(r -> r.getStatus() == 0 || r.getStatus() == 1) // 只考虑待审核和已通过的预约
+                .map(Reservation::getTimeSlot)
+                .collect(Collectors.toList());
+            
+            // 过滤掉已被预约的时间段
+            List<TimeSlot> availableTimeSlots = allTimeSlots.stream()
+                .filter(slot -> !bookedTimeSlots.contains(slot.getSlotName()))
+                .collect(Collectors.toList());
+            
+            return Result.success(availableTimeSlots);
+        } catch (Exception e) {
+            return Result.error("查询可用时间段时发生错误：" + e.getMessage());
         }
     }
 

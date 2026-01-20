@@ -220,10 +220,26 @@ public class MessageService extends ServiceImpl<MessageMapper, Message> {
     }
     
     /**
+     * 获取用户的未读消息（分页）
+     */
+    public List<Message> getUnreadMessagesWithPage(Long userId, int page, int pageSize) {
+        int offset = (page - 1) * pageSize;
+        return messageMapper.findUnreadByReceiverIdWithPage(userId, offset, pageSize);
+    }
+    
+    /**
      * 根据类型获取用户消息
      */
     public List<Message> getUserMessagesByType(Long userId, String messageType) {
         return messageMapper.findByReceiverIdAndType(userId, messageType);
+    }
+    
+    /**
+     * 根据类型获取用户消息（分页）
+     */
+    public List<Message> getUserMessagesByTypeWithPage(Long userId, String messageType, int page, int pageSize) {
+        int offset = (page - 1) * pageSize;
+        return messageMapper.findByReceiverIdAndTypeWithPage(userId, messageType, offset, pageSize);
     }
     
     /**
@@ -327,8 +343,12 @@ public class MessageService extends ServiceImpl<MessageMapper, Message> {
      */
     public Message getMessageDetail(Long messageId, Long userId) {
         Message message = messageMapper.selectById(messageId);
-        if (message == null || !message.getReceiverId().equals(userId)) {
-            return null;
+        if (message == null) {
+            throw new RuntimeException("消息不存在");
+        }
+        
+        if (!message.getReceiverId().equals(userId)) {
+            throw new RuntimeException("您无权访问该消息");
         }
         
         // 自动标记为已读

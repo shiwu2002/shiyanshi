@@ -50,7 +50,6 @@ public interface LaboratoryMapper extends BaseMapper<Laboratory> {
      * 搜索实验室
      */
     default java.util.List<Laboratory> search(@Param("keyword") String keyword, 
-                                              @Param("labType") String labType, 
                                               @Param("status") Integer status) {
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Laboratory> wrapper = 
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();

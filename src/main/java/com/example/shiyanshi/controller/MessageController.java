@@ -118,27 +118,9 @@ public class MessageController {
      * 获取用户的未读消息（从token获取用户ID）
      */
     @GetMapping("/unread")
-    public Result<List<Message>> getUnreadMessages(HttpServletRequest request) {
-        try {
-            Object userIdObj = request.getAttribute("userId");
-            if (userIdObj == null) {
-                return Result.error("缺少用户身份信息，请登录后重试");
-            }
-            Long userId = (userIdObj instanceof Long) ? (Long) userIdObj : Long.valueOf(userIdObj.toString());
-            
-            List<Message> messages = messageService.getUnreadMessages(userId);
-            return Result.success(messages);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
-    }
-    
-    /**
-     * 根据类型获取用户消息（从token获取用户ID）
-     */
-    @GetMapping("/list/type/{messageType}")
-    public Result<List<Message>> getUserMessagesByType(
-            @PathVariable String messageType,
+    public Result<List<Message>> getUnreadMessages(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
             HttpServletRequest request) {
         try {
             Object userIdObj = request.getAttribute("userId");
@@ -147,7 +129,30 @@ public class MessageController {
             }
             Long userId = (userIdObj instanceof Long) ? (Long) userIdObj : Long.valueOf(userIdObj.toString());
             
-            List<Message> messages = messageService.getUserMessagesByType(userId, messageType);
+            List<Message> messages = messageService.getUnreadMessagesWithPage(userId, page, pageSize);
+            return Result.success(messages);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据类型获取用户消息（分页，从token获取用户ID）
+     */
+    @GetMapping("/list/type/{messageType}")
+    public Result<List<Message>> getUserMessagesByTypeWithPage(
+            @PathVariable String messageType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            HttpServletRequest request) {
+        try {
+            Object userIdObj = request.getAttribute("userId");
+            if (userIdObj == null) {
+                return Result.error("缺少用户身份信息，请登录后重试");
+            }
+            Long userId = (userIdObj instanceof Long) ? (Long) userIdObj : Long.valueOf(userIdObj.toString());
+            
+            List<Message> messages = messageService.getUserMessagesByTypeWithPage(userId, messageType, page, pageSize);
             return Result.success(messages);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -416,6 +421,29 @@ public class MessageController {
             Long userId = (userIdObj instanceof Long) ? (Long) userIdObj : Long.valueOf(userIdObj.toString());
             
             List<Message> messages = messageService.getHighPriorityUnreadMessages(userId);
+            return Result.success(messages);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 根路径获取用户消息列表（兼容/api/messages请求）
+     * GET /api/messages?page=1&pageSize=20
+     */
+    @GetMapping
+    public Result<List<Message>> getMessages(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            HttpServletRequest request) {
+        try {
+            Object userIdObj = request.getAttribute("userId");
+            if (userIdObj == null) {
+                return Result.error("缺少用户身份信息，请登录后重试");
+            }
+            Long userId = (userIdObj instanceof Long) ? (Long) userIdObj : Long.valueOf(userIdObj.toString());
+            
+            List<Message> messages = messageService.getUserMessagesWithPage(userId, page, pageSize);
             return Result.success(messages);
         } catch (Exception e) {
             return Result.error(e.getMessage());

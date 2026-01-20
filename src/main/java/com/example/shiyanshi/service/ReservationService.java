@@ -85,23 +85,35 @@ public class ReservationService {
      */
     @Transactional
     public Reservation createReservation(Reservation reservation) {
+        log.info("开始创建预约，参数：userId={}, labId={}, reserveDate={}, timeSlot={}, peopleNum={}", 
+            reservation.getUserId(), reservation.getLabId(), reservation.getReserveDate(), 
+            reservation.getTimeSlot(), reservation.getPeopleNum());
+        
         // 验证用户
         User user = userMapper.findById(reservation.getUserId());
         if (user == null) {
+            log.error("用户不存在：userId={}", reservation.getUserId());
             throw new RuntimeException("用户不存在");
         }
+        log.info("用户验证通过：userId={}, userName={}", user.getId(), user.getRealName());
         
         // 验证实验室
         Laboratory laboratory = laboratoryMapper.findById(reservation.getLabId());
         if (laboratory == null) {
+            log.error("实验室不存在：labId={}", reservation.getLabId());
             throw new RuntimeException("实验室不存在");
         }
         if (laboratory.getStatus() != 1) {
+            log.error("实验室不可预约：labId={}, status={}", laboratory.getId(), laboratory.getStatus());
             throw new RuntimeException("实验室当前不可预约");
         }
+        log.info("实验室验证通过：labId={}, labName={}, capacity={}", 
+            laboratory.getId(), laboratory.getLabName(), laboratory.getCapacity());
         
         // 检查预约日期是否有效
         if (reservation.getReserveDate().isBefore(LocalDate.now())) {
+            log.error("预约日期无效：reserveDate={}, 当前日期={}", 
+                reservation.getReserveDate(), LocalDate.now());
             throw new RuntimeException("不能预约过去的日期");
         }
         
@@ -111,12 +123,17 @@ public class ReservationService {
             reservation.getReserveDate(),
             reservation.getTimeSlot()
         );
+        log.info("时间冲突检查结果：conflict={}", conflict);
         if (conflict > 0) {
+            log.error("时间段已被预约：labId={}, reserveDate={}, timeSlot={}, 冲突数量={}", 
+                reservation.getLabId(), reservation.getReserveDate(), reservation.getTimeSlot(), conflict);
             throw new RuntimeException("该时间段已被预约");
         }
         
-        // 检查人数是否超过容量
-        if (reservation.getPeopleNum() > laboratory.getCapacity()) {
+        // 检查人数是否超过容量（仅当peopleNum不为null时检查）
+        if (reservation.getPeopleNum() != null && reservation.getPeopleNum() > laboratory.getCapacity()) {
+            log.error("预约人数超过容量：peopleNum={}, capacity={}", 
+                reservation.getPeopleNum(), laboratory.getCapacity());
             throw new RuntimeException("预约人数超过实验室容量");
         }
         
@@ -125,7 +142,10 @@ public class ReservationService {
         reservation.setLabName(laboratory.getLabName());
         reservation.setStatus(0); // 待审核
         
+        log.info("准备插入预约记录");
         reservationMapper.insert(reservation);
+        log.info("预约创建成功：id={}", reservation.getId());
+        
         return reservation;
     }
     
@@ -382,11 +402,24 @@ public class ReservationService {
     
     /**
      * 检查时间冲突
+     * 返回true表示有冲突，false表示无冲突
      */
     public boolean checkTimeConflict(Long labId, String reserveDate, String timeSlot) {
+        log.info("=== Service层检查时间冲突 ===");
+        log.info("参数 - labId: {}, reserveDate: {}, timeSlot: {}", labId, reserveDate, timeSlot);
+        
         LocalDate date = LocalDate.parse(reserveDate);
+        log.info("解析后的日期: {}", date);
+        
         int conflict = reservationMapper.checkTimeConflict(labId, date, timeSlot);
-        return conflict > 0;
+        log.info("Mapper返回的冲突数量: {}", conflict);
+        
+        boolean hasConflict = conflict > 0;
+        log.info("最终判断结果: hasConflict={} (conflict={}, conflict > 0 = {})", 
+            hasConflict, conflict, conflict > 0);
+        
+        // conflict > 0 表示有冲突（存在待审核或已通过的预约）
+        return hasConflict;
     }
     
     /**

@@ -92,8 +92,8 @@ public class LaboratoryService {
     /**
      * 搜索实验室
      */
-    public List<Laboratory> search(String keyword, String labType, Integer status) {
-        return laboratoryMapper.search(keyword, labType, status);
+    public List<Laboratory> search(String keyword, Integer status) {
+        return laboratoryMapper.search(keyword, status);
     }
     
     /**
