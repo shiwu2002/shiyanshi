@@ -6,7 +6,6 @@ import com.example.shiyanshi.entity.User;
 import com.example.shiyanshi.mapper.ReservationMapper;
 import com.example.shiyanshi.service.EmailService;
 import com.example.shiyanshi.service.MessageService;
-import com.example.shiyanshi.service.ReservationService;
 import com.example.shiyanshi.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ReservationReminderTask {
 
-    private final ReservationService reservationService;
     private final ReservationMapper reservationMapper;
     private final MessageService messageService;
     private final EmailService emailService;

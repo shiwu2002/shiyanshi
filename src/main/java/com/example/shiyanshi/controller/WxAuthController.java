@@ -40,10 +40,10 @@ import java.util.Map;
 @CrossOrigin
 public class WxAuthController {
 
-    @Value("${wx.appid:}")
+    @Value("${wx.appid:your-wx-appid}")
     private String appId;
 
-    @Value("${wx.secret:}")
+    @Value("${wx.secret:your-wx-secret}")
     private String appSecret;
 
     private static final String PLATFORM_MINI_PROGRAM = "mini_program";

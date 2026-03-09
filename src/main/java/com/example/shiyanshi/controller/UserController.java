@@ -260,24 +260,37 @@ public class UserController {
                 return Result.error("该邮箱已被注册");
             }
             
-            emailService.sendRegisterVerifyEmail(email, username);
-            return Result.success("验证邮件已发送，请查收", null);
+            // 发送验证码而非验证链接
+            emailService.sendVerificationCode(email, "register");
+            return Result.success("验证码已发送，请查收邮件", null);
         } catch (Exception e) {
             return Result.error("发送失败：" + e.getMessage());
         }
     }
     
     /**
-     * 验证邮箱注册token
+     * 验证邮箱注册验证码
      */
-    @GetMapping("/verify-email")
-    public Result<Void> verifyEmail(@RequestParam String token) {
+    @PostMapping("/verify-register-code")
+    public Result<Void> verifyRegisterCode(@RequestBody Map<String, String> params) {
         try {
-            String email = emailService.verifyEmailToken(token);
-            if (email == null) {
-                return Result.error("验证链接已失效或不存在");
+            String email = params.get("email");
+            String code = params.get("code");
+                
+            if (email == null || email.trim().isEmpty()) {
+                return Result.error("邮箱地址不能为空");
             }
-            
+                
+            if (code == null || code.trim().isEmpty()) {
+                return Result.error("验证码不能为空");
+            }
+                
+            // 验证验证码
+            boolean verified = emailService.verifyCode(email, code);
+            if (!verified) {
+                return Result.error("验证码错误或已失效");
+            }
+                
             // 更新用户邮箱验证状态
             userService.updateEmailVerified(email, 1);
             return Result.success("邮箱验证成功", null);
@@ -421,10 +434,10 @@ public class UserController {
     }
     
     /**
-     * 重新发送邮箱验证邮件
+     * 重新发送邮箱验证码
      */
-    @PostMapping("/resend-verify-email")
-    public Result<Void> resendVerifyEmail(@RequestBody Map<String, Object> params) {
+    @PostMapping("/resend-verify-code")
+    public Result<Void> resendVerifyCode(@RequestBody Map<String, Object> params) {
         try {
             Long userId = Long.valueOf(params.get("userId").toString());
             User user = userService.findById(userId);
@@ -441,8 +454,8 @@ public class UserController {
                 return Result.error("邮箱已验证，无需重复验证");
             }
             
-            emailService.sendRegisterVerifyEmail(user.getEmail(), user.getUsername());
-            return Result.success("验证邮件已重新发送", null);
+            emailService.sendVerificationCode(user.getEmail(), "register");
+            return Result.success("验证码已重新发送", null);
         } catch (Exception e) {
             return Result.error("发送失败：" + e.getMessage());
         }

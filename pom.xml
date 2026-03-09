@@ -156,6 +156,13 @@
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
+		<!-- Redisson 核心库（手动配置，避免自动兼容性问题） -->
+		<dependency>
+			<groupId>org.redisson</groupId>
+			<artifactId>redisson</artifactId>
+			<version>3.41.0</version>
+		</dependency>
+
 		<!-- ZXing for QR Code -->
 		<dependency>
 			<groupId>com.google.zxing</groupId>

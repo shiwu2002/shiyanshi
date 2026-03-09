@@ -1,7 +1,6 @@
 package com.example.shiyanshi.aspect;
 
 import com.example.shiyanshi.annotation.RequirePermission;
-import com.example.shiyanshi.util.JWTUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

@@ -7,14 +7,18 @@ import com.example.shiyanshi.mapper.LaboratoryMapper;
 import com.example.shiyanshi.mapper.ReservationMapper;
 import com.example.shiyanshi.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 预约服务层
@@ -38,8 +42,14 @@ public class ReservationService {
     @Autowired
     private EmailService emailService;
     
+    @Autowired
+    private RedissonClient redissonClient;
+    
+    @Autowired
+    private CreditService creditService;
+    
     /**
-     * 根据ID查询预约
+     * 根据 ID 查询预约
      */
     public Reservation findById(Long id) {
         return reservationMapper.findById(id);
@@ -53,14 +63,14 @@ public class ReservationService {
     }
     
     /**
-     * 根据用户ID查询预约
+     * 根据用户 ID 查询预约
      */
     public List<Reservation> findByUserId(Long userId) {
         return reservationMapper.findByUserId(userId);
     }
     
     /**
-     * 根据实验室ID查询预约
+     * 根据实验室 ID 查询预约
      */
     public List<Reservation> findByLabId(Long labId) {
         return reservationMapper.findByLabId(labId);
@@ -81,7 +91,8 @@ public class ReservationService {
     }
     
     /**
-     * 创建预约
+     * 创建预约（带并发控制 + 信誉分检查）
+     * 使用 Redis 分布式锁 + 数据库唯一索引双重保障防止超卖
      */
     @Transactional
     public Reservation createReservation(Reservation reservation) {
@@ -89,64 +100,106 @@ public class ReservationService {
             reservation.getUserId(), reservation.getLabId(), reservation.getReserveDate(), 
             reservation.getTimeSlot(), reservation.getPeopleNum());
         
-        // 验证用户
-        User user = userMapper.findById(reservation.getUserId());
-        if (user == null) {
-            log.error("用户不存在：userId={}", reservation.getUserId());
-            throw new RuntimeException("用户不存在");
+        // 【信誉分检查】检查用户是否可以预约
+        int canReserve = creditService.checkCanReserve(reservation.getUserId());
+        if (canReserve == 1) {
+            throw new RuntimeException("您的信誉分过低，已被禁止预约。请参加实验室安全培训或联系管理员恢复信誉分。");
         }
-        log.info("用户验证通过：userId={}, userName={}", user.getId(), user.getRealName());
-        
-        // 验证实验室
-        Laboratory laboratory = laboratoryMapper.findById(reservation.getLabId());
-        if (laboratory == null) {
-            log.error("实验室不存在：labId={}", reservation.getLabId());
-            throw new RuntimeException("实验室不存在");
-        }
-        if (laboratory.getStatus() != 1) {
-            log.error("实验室不可预约：labId={}, status={}", laboratory.getId(), laboratory.getStatus());
-            throw new RuntimeException("实验室当前不可预约");
-        }
-        log.info("实验室验证通过：labId={}, labName={}, capacity={}", 
-            laboratory.getId(), laboratory.getLabName(), laboratory.getCapacity());
-        
-        // 检查预约日期是否有效
-        if (reservation.getReserveDate().isBefore(LocalDate.now())) {
-            log.error("预约日期无效：reserveDate={}, 当前日期={}", 
-                reservation.getReserveDate(), LocalDate.now());
-            throw new RuntimeException("不能预约过去的日期");
+        if (canReserve == 2) {
+            throw new RuntimeException("您本周的预约次数已达到上限，请下周再试。");
         }
         
-        // 检查时间冲突
-        int conflict = reservationMapper.checkTimeConflict(
-            reservation.getLabId(),
-            reservation.getReserveDate(),
-            reservation.getTimeSlot()
-        );
-        log.info("时间冲突检查结果：conflict={}", conflict);
-        if (conflict > 0) {
-            log.error("时间段已被预约：labId={}, reserveDate={}, timeSlot={}, 冲突数量={}", 
-                reservation.getLabId(), reservation.getReserveDate(), reservation.getTimeSlot(), conflict);
-            throw new RuntimeException("该时间段已被预约");
+        // 构造分布式锁的 key：reservation:lock:{labId}:{date}:{timeSlot}
+        String lockKey = String.format("reservation:lock:%d:%s:%s", 
+            reservation.getLabId(), 
+            reservation.getReserveDate().toString(),
+            reservation.getTimeSlot());
+        
+        RLock lock = redissonClient.getLock(lockKey);
+        
+        // 尝试获取锁，最多等待 5 秒，锁持有时间最长 10 秒（防止死锁）
+        boolean isLocked = false;
+        try {
+            isLocked = lock.tryLock(5, 10, TimeUnit.SECONDS);
+            if (!isLocked) {
+                log.error("获取分布式锁失败，可能存在并发冲突：lockKey={}", lockKey);
+                throw new RuntimeException("系统繁忙，请稍后重试（并发预约冲突）");
+            }
+            
+            log.info("成功获取分布式锁，开始执行预约逻辑：lockKey={}", lockKey);
+            
+            // ========== 以下是原有的业务逻辑 ==========
+            
+            // 验证用户
+            User user = userMapper.findById(reservation.getUserId());
+            if (user == null) {
+                log.error("用户不存在：userId={}", reservation.getUserId());
+                throw new RuntimeException("用户不存在");
+            }
+            log.info("用户验证通过：userId={}, userName={}", user.getId(), user.getRealName());
+            
+            // 验证实验室
+            Laboratory laboratory = laboratoryMapper.findById(reservation.getLabId());
+            if (laboratory == null) {
+                log.error("实验室不存在：labId={}", reservation.getLabId());
+                throw new RuntimeException("实验室不存在");
+            }
+            if (laboratory.getStatus() != 1) {
+                log.error("实验室不可预约：labId={}, status={}", laboratory.getId(), laboratory.getStatus());
+                throw new RuntimeException("实验室当前不可预约");
+            }
+            log.info("实验室验证通过：labId={}, labName={}, capacity={}", 
+                laboratory.getId(), laboratory.getLabName(), laboratory.getCapacity());
+            
+            // 检查预约日期是否有效
+            if (reservation.getReserveDate().isBefore(LocalDate.now())) {
+                log.error("预约日期无效：reserveDate={}, 当前日期={}", 
+                    reservation.getReserveDate(), LocalDate.now());
+                throw new RuntimeException("不能预约过去的日期");
+            }
+            
+            // 【关键】双重检查时间冲突（在分布式锁保护下再次检查）
+            int conflict = reservationMapper.checkTimeConflict(
+                reservation.getLabId(),
+                reservation.getReserveDate(),
+                reservation.getTimeSlot()
+            );
+            log.info("时间冲突检查结果（加锁后）：conflict={}", conflict);
+            if (conflict > 0) {
+                log.error("时间段已被预约（加锁后发现冲突）：labId={}, reserveDate={}, timeSlot={}, 冲突数量={}", 
+                    reservation.getLabId(), reservation.getReserveDate(), reservation.getTimeSlot(), conflict);
+                throw new RuntimeException("该时间段已被预约");
+            }
+            
+            // 检查人数是否超过容量（仅当 peopleNum 不为 null 时检查）
+            if (reservation.getPeopleNum() != null && reservation.getPeopleNum() > laboratory.getCapacity()) {
+                log.error("预约人数超过容量：peopleNum={}, capacity={}", 
+                    reservation.getPeopleNum(), laboratory.getCapacity());
+                throw new RuntimeException("预约人数超过实验室容量");
+            }
+            
+            // 设置用户姓名和实验室名称
+            reservation.setUserName(user.getRealName());
+            reservation.setLabName(laboratory.getLabName());
+            reservation.setStatus(0); // 待审核
+            
+            log.info("准备插入预约记录");
+            reservationMapper.insert(reservation);
+            log.info("预约创建成功：id={}", reservation.getId());
+            
+            return reservation;
+            
+        } catch (InterruptedException e) {
+            log.error("获取分布式锁时被中断", e);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("系统繁忙，请稍后重试");
+        } finally {
+            // 释放锁（如果成功获取了锁）
+            if (isLocked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.info("已释放分布式锁：lockKey={}", lockKey);
+            }
         }
-        
-        // 检查人数是否超过容量（仅当peopleNum不为null时检查）
-        if (reservation.getPeopleNum() != null && reservation.getPeopleNum() > laboratory.getCapacity()) {
-            log.error("预约人数超过容量：peopleNum={}, capacity={}", 
-                reservation.getPeopleNum(), laboratory.getCapacity());
-            throw new RuntimeException("预约人数超过实验室容量");
-        }
-        
-        // 设置用户姓名和实验室名称
-        reservation.setUserName(user.getRealName());
-        reservation.setLabName(laboratory.getLabName());
-        reservation.setStatus(0); // 待审核
-        
-        log.info("准备插入预约记录");
-        reservationMapper.insert(reservation);
-        log.info("预约创建成功：id={}", reservation.getId());
-        
-        return reservation;
     }
     
     /**
@@ -195,13 +248,22 @@ public class ReservationService {
         }
         reservationMapper.approve(id, status, approver, comment);
         
+        // 预约审核通过，给用户加分
+        if (status == 1) {
+            try {
+                creditService.approveReservation(reservation.getUserId(), id);
+            } catch (Exception e) {
+                log.error("更新信誉分失败", e);
+            }
+        }
+        
         // 发送审核结果通知
         try {
             User user = userMapper.findById(reservation.getUserId());
             if (user != null) {
                 String statusText = status == 1 ? "已通过" : "已拒绝";
                 String title = "预约审核通知";
-                String content = String.format("您的预约[%s - %s %s]审核结果：%s。%s",
+                String content = String.format("您的预约 [%s - %s %s] 审核结果：%s。%s",
                     reservation.getLabName(),
                     reservation.getReserveDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     reservation.getTimeSlot(),
@@ -240,7 +302,7 @@ public class ReservationService {
     }
     
     /**
-     * 取消预约
+     * 取消预约并扣分
      */
     @Transactional
     public void cancel(Long id, String cancelReason) {
@@ -251,6 +313,21 @@ public class ReservationService {
         if (reservation.getStatus() == 3 || reservation.getStatus() == 4) {
             throw new RuntimeException("该预约不能取消");
         }
+        
+        // 计算取消时间与预约时间的差值，决定是否扣分
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime reserveDateTime = reservation.getReserveDate().atTime(
+            java.time.LocalTime.parse(reservation.getTimeSlot().split("-")[0] + ":00")
+        );
+        
+        // 取消预约并扣分
+        creditService.cancelReservation(
+            reservation.getUserId(), 
+            id, 
+            now, 
+            reserveDateTime
+        );
+        
         reservationMapper.cancel(id, cancelReason);
         
         // 发送取消通知
@@ -258,7 +335,7 @@ public class ReservationService {
             User user = userMapper.findById(reservation.getUserId());
             if (user != null) {
                 String title = "预约取消通知";
-                String content = String.format("您的预约[%s - %s %s]已被取消。%s",
+                String content = String.format("您的预约 [%s - %s %s] 已被取消。%s",
                     reservation.getLabName(),
                     reservation.getReserveDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     reservation.getTimeSlot(),
@@ -307,7 +384,7 @@ public class ReservationService {
             throw new RuntimeException("只能完成已通过审核的预约");
         }
         if (rating < 1 || rating > 5) {
-            throw new RuntimeException("评分必须在1-5之间");
+            throw new RuntimeException("评分必须在 1-5 之间");
         }
         reservationMapper.complete(id, rating, comment);
         
@@ -316,7 +393,7 @@ public class ReservationService {
             User user = userMapper.findById(reservation.getUserId());
             if (user != null) {
                 String title = "预约完成通知";
-                String content = String.format("您的预约[%s - %s %s]已完成。评分：%d星。%s",
+                String content = String.format("您的预约 [%s - %s %s] 已完成。评分：%d星。%s",
                     reservation.getLabName(),
                     reservation.getReserveDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     reservation.getTimeSlot(),
@@ -402,20 +479,20 @@ public class ReservationService {
     
     /**
      * 检查时间冲突
-     * 返回true表示有冲突，false表示无冲突
+     * 返回 true 表示有冲突，false 表示无冲突
      */
     public boolean checkTimeConflict(Long labId, String reserveDate, String timeSlot) {
-        log.info("=== Service层检查时间冲突 ===");
+        log.info("=== Service 层检查时间冲突 ===");
         log.info("参数 - labId: {}, reserveDate: {}, timeSlot: {}", labId, reserveDate, timeSlot);
         
         LocalDate date = LocalDate.parse(reserveDate);
-        log.info("解析后的日期: {}", date);
+        log.info("解析后的日期：{}", date);
         
         int conflict = reservationMapper.checkTimeConflict(labId, date, timeSlot);
-        log.info("Mapper返回的冲突数量: {}", conflict);
+        log.info("Mapper 返回的冲突数量：{}", conflict);
         
         boolean hasConflict = conflict > 0;
-        log.info("最终判断结果: hasConflict={} (conflict={}, conflict > 0 = {})", 
+        log.info("最终判断结果：hasConflict={} (conflict={}, conflict > 0 = {})", 
             hasConflict, conflict, conflict > 0);
         
         // conflict > 0 表示有冲突（存在待审核或已通过的预约）
@@ -432,7 +509,7 @@ public class ReservationService {
     }
     
     /**
-     * 根据实验室ID和日期查询预约
+     * 根据实验室 ID 和日期查询预约
      */
     public List<Reservation> findByLabIdAndDate(Long labId, String date) {
         LocalDate reserveDate = LocalDate.parse(date);
@@ -454,11 +531,11 @@ public class ReservationService {
     /**
      * 获取指定用户的预约统计数据
      * - total: 总预约次数（状态 in [1,4] 与现有 countByUserId 同口径保持）
-     * - pending: 待审核(0)
-     * - approved: 已通过(1)
-     * - rejected: 已拒绝(2)
-     * - canceled: 已取消(3)
-     * - completed: 已完成(4)
+     * - pending: 待审核 (0)
+     * - approved: 已通过 (1)
+     * - rejected: 已拒绝 (2)
+     * - canceled: 已取消 (3)
+     * - completed: 已完成 (4)
      */
     public Map<String, Integer> getUserReservationStats(Long userId) {
         Map<String, Integer> stats = new HashMap<>();
