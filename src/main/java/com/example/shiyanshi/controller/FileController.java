@@ -105,6 +105,59 @@ public class FileController {
     }
     
     /**
+     * 上传实验室图片
+     * 
+     * @param files 多个图片文件
+     * @return 包含所有图片信息的 Result 对象
+     */
+    @RequirePermission(value = 2, description = "上传实验室图片需要管理员及以上权限")
+    @PostMapping("/upload-lab-image")
+    public Result<Map<String, Object>> uploadLabImages(
+            @RequestParam("files") MultipartFile[] files) {
+        
+        if (files == null || files.length == 0) {
+            return Result.error("请选择要上传的图片");
+        }
+        
+        // 批量上传限制：最多 10 张图片
+        if (files.length > 10) {
+            return Result.error("单次最多上传 10 张图片");
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        int successCount = 0;
+        int failCount = 0;
+        StringBuilder failMessages = new StringBuilder();
+        java.util.List<Map<String, String>> uploadedImages = new java.util.ArrayList<>();
+        
+        for (MultipartFile file : files) {
+            try {
+                Map<String, String> fileResult = fileUploadService.uploadFile(file, "lab");
+                if (fileResult != null && !fileResult.isEmpty()) {
+                    uploadedImages.add(fileResult);
+                    successCount++;
+                }
+            } catch (RuntimeException e) {
+                failCount++;
+                if (failMessages.length() > 0) {
+                    failMessages.append("; ");
+                }
+                failMessages.append(file.getOriginalFilename()).append(": ").append(e.getMessage());
+            }
+        }
+        
+        result.put("total", files.length);
+        result.put("success", successCount);
+        result.put("fail", failCount);
+        result.put("images", uploadedImages);
+        if (failMessages.length() > 0) {
+            result.put("failMessages", failMessages.toString());
+        }
+        
+        return Result.success(result);
+    }
+    
+    /**
      * 删除文件
      * 
      * @param filePath 文件路径

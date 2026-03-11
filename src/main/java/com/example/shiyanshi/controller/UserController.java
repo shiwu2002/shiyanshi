@@ -61,14 +61,18 @@ public class UserController {
     
     /**
      * 用户注册
+     * 注意：注册时强制设置为用户类型（学生），防止前端传入非法权限
      */
     @PostMapping("/register")
     public Result<User> register(@RequestBody User user) {
         try {
-            User newUser = userService.register(user);
-            return Result.success("注册成功", newUser);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+            // 强制设置为用户类型（学生），忽略前端传入的 userType
+            user.setUserType(1); // 1-学生
+            
+            User newUser= userService.register(user);
+           return Result.success("注册成功", newUser);
+        } catch(Exception e) {
+           return Result.error(e.getMessage());
         }
     }
     
