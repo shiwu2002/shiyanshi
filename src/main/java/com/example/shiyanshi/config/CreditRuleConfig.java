@@ -30,17 +30,17 @@ public class CreditRuleConfig {
     /**
      * 加分规则
      */
-    private AddRules add;
+    private AddRules add = new AddRules();
     
     /**
      * 扣分规则
      */
-    private SubtractRules subtract;
+    private SubtractRules subtract = new SubtractRules();
     
     /**
      * 信用等级限制
      */
-    private LevelLimits levelLimits;
+    private LevelLimits levelLimits = new LevelLimits();
     
     @Data
     public static class AddRules {

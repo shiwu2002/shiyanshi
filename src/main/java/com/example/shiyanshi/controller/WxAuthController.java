@@ -205,7 +205,6 @@ public class WxAuthController {
             data.put("unionid", record.getUnionid());
             data.put("bindStatus", record.getBindStatus());
 
-            // 可选：绑定后直接返回系统JWT，提升体验
             String token = JWTUtil.generateToken(user.getId(), user.getUsername(), user.getUserType());
             data.put("token", token);
 

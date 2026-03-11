@@ -33,7 +33,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/timeslot/list",        // 时间段列表查询不拦截（游客可查看）
                         "/api/timeslot/enabled",     // 启用时间段查询不拦截（游客可查看）
                         "/api/wx/login",              // 微信登录接口不拦截（游客可查看）
-                        "/api/wx/callback"           // 微信回调接口不拦截（游客可查看）
+                        "/api/wx/callback",           // 微信回调接口不拦截（游客可查看）
+                        "/api/wx/bind"
                 );
     }
 
