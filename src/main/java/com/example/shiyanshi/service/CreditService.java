@@ -280,6 +280,22 @@ public class CreditService {
     }
     
     /**
+     * 检查用户本月是否参加过安全培训
+     */
+    public boolean hasTrainingRecordThisMonth(Long userId) {
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        
+        Long count = userCreditLogMapper.selectCount(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserCreditLog>()
+                .eq(UserCreditLog::getUserId, userId)
+                .eq(UserCreditLog::getDescription, "参加实验室安全培训")
+                .ge(UserCreditLog::getCreateTime, startOfMonth)
+        );
+        
+        return count > 0;
+    }
+    
+    /**
      * 获取信誉分统计信息
      */
     public Map<String, Object> getCreditStats(Long userId) {

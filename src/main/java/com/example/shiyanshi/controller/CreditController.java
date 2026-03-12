@@ -148,7 +148,17 @@ public class CreditController {
                 return Result.error("未获取到用户信息");
             }
             
-            // TODO: 检查本月是否已参加过培训
+            // 检查当前信誉分
+            UserCredit credit = creditService.getUserCredit(userId);
+            if (credit == null || credit.getScore() >= 80) {
+                return Result.error("信誉分不低于 80 分，无法参加培训恢复");
+            }
+            
+            // 检查本月是否已参加过培训
+            boolean hasTrainedThisMonth = creditService.hasTrainingRecordThisMonth(userId);
+            if (hasTrainedThisMonth) {
+                return Result.error("本月已参加过培训，下月再来吧");
+            }
             
             // 恢复 20 分
             creditService.adjustByAdmin(userId, 20, "参加实验室安全培训", "SYSTEM");
